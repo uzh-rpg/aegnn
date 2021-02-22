@@ -1,0 +1,10 @@
+# Data files.
+data/
+
+# IDE and cache files.
+.idea/
+*.pytest_cache
+*.ipynb_checkpoints
+
+# Specific scratch files.
+tests/notebooks/scratch.ipynb
