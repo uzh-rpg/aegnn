@@ -1,16 +1,24 @@
 [tool.poetry]
 name = "aegnn"
 version = "0.1.0"
-description = ""
+description = "Asynchronous Graph Neural Networks for Event-Data"
 authors = ["simon-schaefer <simon.k.schaefer@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
 numpy = "^1.20.1"
-pytest = "^6.2.2"
-jupyter = "^1.0.0"
+torch = "^1.7.1"
+pytorch-lightning = "^1.2.0"
+
+# Torch geometric requires several other torch packages.
+torch-sparse = "^0.6.8"
+torch-scatter = "^2.0.5"
+torch-spline-conv = "^1.2.1"
+torch-geometric = "^1.6.3"
 
 [tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+jupyter = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
