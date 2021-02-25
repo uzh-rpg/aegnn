@@ -1,25 +1,26 @@
 import glob
-import numpy as np
 import os
+import numpy as np
+import scipy.io as sio
 import torch
 import torch_geometric
 
-from typing import Tuple, Optional
+from typing import Tuple
 
 import aegnn.datasets.utils as utils
 from .base import EventDataset
 
 
-class NCaltech101(EventDataset):
+class CIFAR10(EventDataset):
 
-    class NCaltech101DS(torch_geometric.data.Dataset):
+    class CIFAR10DS(torch_geometric.data.Dataset):
 
         def __init__(self, root: str, transform, pre_transform, pre_filter, classes=None, mode: str = "training"):
             root_mode = os.path.join(root, mode)
             if not os.path.isdir(root_mode):
                 raise FileNotFoundError(f"Mode {mode} not found at root {root}!")
 
-            self.classes = classes or os.listdir(os.path.join(root_mode, "raw"))
+            self.classes = ["dog", "airplane", "bird"]
             super().__init__(root=root_mode, transform=transform, pre_transform=pre_transform, pre_filter=pre_filter)
 
         def get(self, idx: int) -> torch_geometric.data.Data:
@@ -31,10 +32,15 @@ class NCaltech101(EventDataset):
         #########################################################################################################
         def process(self):
             def load(raw_file: str) -> Tuple[torch_geometric.data.Data, str]:
-                events = torch.from_numpy(np.load(raw_file)).cuda()
-                obj_class = raw_file.split("/")[-2]
-                file_id = raw_file.split("/")[-1]
-                data_obj = torch_geometric.data.Data(x=events, pos=events[:, :3], class_id=obj_class, file_id=file_id)
+                saved_name = os.path.basename(raw_file).replace(".mat", ".pt")
+
+                content = sio.loadmat(raw_file)
+                obj_class = saved_name.split("_")[1]  # format: cifar10_dog_2.pt
+                feature = torch.tensor(content['feature'])
+                edge_index = torch.tensor(np.array(content['edge'], np.int32), dtype=torch.long)
+                pos = torch.tensor(content['pseudo'])
+                data_obj = torch_geometric.data.Data(x=feature, edge_index=edge_index, class_id=obj_class,
+                                                     file_id=saved_name, pos=pos)
                 return data_obj, obj_class
 
             utils.data.process_events(load, raw_dir=self.raw_dir, raw_files=self.raw_file_names,
@@ -46,7 +52,7 @@ class NCaltech101(EventDataset):
         #########################################################################################################
         @property
         def raw_file_names(self):
-            return glob.glob(os.path.join(self.raw_dir, "*", "*.npy"), recursive=True)
+            return glob.glob(os.path.join(self.raw_dir, "*.mat"), recursive=True)
 
         @property
         def processed_file_names(self):
@@ -59,8 +65,8 @@ class NCaltech101(EventDataset):
     # Data Module ###########################################################################################
     #########################################################################################################
     def __init__(self, **kwargs):
-        super().__init__(dataset_class=self.NCaltech101DS, **kwargs)
+        super().__init__(dataset_class=self.CIFAR10DS, **kwargs)
 
     @property
     def img_shape(self) -> Tuple[int, int]:
-        return 240, 180
+        return 128, 128

@@ -1,14 +1,17 @@
 # Python build files.
 *.egg-info
 *.pyc
+*.DS_Store
 
 # Data files.
 data/
+logs/
 
 # IDE and cache files.
 .idea/
 *.pytest_cache
 *.ipynb_checkpoints
 
-# Scratch notebook for experimenting.
-notebooks/scratch
+# Scratch files.
+scratch/
+lightning_logs/
