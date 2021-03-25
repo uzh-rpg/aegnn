@@ -15,21 +15,24 @@ class NVST(Transform):
 
     - select a random temporal window with length `dt`
     - define each remaining event as node
-    - coarsen graph by applying maximal count clustering (see below)
+    - coarsen graph by applying uniform voxel grid clustering (see below)
     - add an edge if the (weighted) spatio-temporal euclidean from one node to another is <= `r` with
       `d_max` as maximal number of possible neighbors
     - use the relative cartesian coordinates as edge attribute
 
     ["Graph-Based Object Classification for Neuromorphic VisionSensing" (Bi, 2019)]"""
 
-    def __init__(self, r: float = 3, d_max: int = 32, dt: float = 0.03, beta: float = 0.5e-5, n_max: int = 8,
-                 seed: int = 12345):
+    def __init__(self, r: float = 3, d_max: int = 32, dt: float = 0.03, beta: float = 0.5e-5,
+                 pool_x: int = 3, pool_y: int = 3, pool_dt: float = 0.001, seed: int = 12345):
         random.seed(seed)
         self.r = float(r)
         self.d_max = int(d_max)
         self.dt = float(dt)  # 30 ms section
         self.beta = beta
-        self.n_max = n_max
+
+        self.pool_x = pool_x
+        self.pool_y = pool_y
+        self.pool_dt = pool_dt
 
         self.__edge_attr = Cartesian(norm=True, cat=False)
 
@@ -56,8 +59,10 @@ class NVST(Transform):
         # select one node (max node) from each cluster and drop the other ones.
         # clusters = self.max_count_clustering(data.pos, k=self.n_max)
         # data = self.sample_one_from_cluster(clusters=clusters, data=data)
+
         pseudo_batch = torch.zeros(data.num_nodes, device=data.x.device)
-        cluster = voxel_grid(data.pos[:, :2], batch=pseudo_batch, size=[5, 5])
+        grid_size = [self.pool_x, self.pool_y, self.pool_dt]
+        cluster = voxel_grid(data.pos, batch=pseudo_batch, size=grid_size)
         data = self.sample_one_from_cluster(cluster, data=data)
 
         # Generate a graph based on the euclidean spatial distance between events. Due to
@@ -73,37 +78,38 @@ class NVST(Transform):
 
     def __repr__(self):
         name = self.__class__.__name__
-        return f"{name}[r={self.r}, d_max={self.d_max}, dt={self.dt}, beta={self.beta}, n_max={self.n_max}]"
+        pool_description = f"pool_x={self.pool_x}, pool_y={self.pool_y}, pool_dt={self.pool_dt}"
+        return f"{name}[r={self.r}, d_max={self.d_max}, dt={self.dt}, beta={self.beta}, {pool_description}]"
 
     #####################################################################################
     # Modules ###########################################################################
     #####################################################################################
-    @staticmethod
-    def max_count_clustering(data: torch.Tensor, k: int = 10) -> torch.Tensor:
-        n = data.size(0)
-
-        clusters = torch.zeros(n, 1, device=data.device)
-        index = torch.arange(0, n, device=data.device).view(n, 1)
-        data = torch.cat([data, index, clusters], dim=1)
-
-        def split(points: torch.Tensor) -> torch.Tensor:
-            if points.size(0) <= k:
-                return points
-
-            distances = torch.cdist(points[:, :-2], points[:, :-2], p=2)
-            a, b = torch.nonzero(torch.eq(distances, torch.max(distances)))[0]
-            in_a = torch.le(distances[a, :], distances[b, :])
-            if torch.all(in_a) or not torch.any(in_a):
-                half_length = int(in_a.numel() / 2)
-                in_a[:half_length] = ~in_a[:half_length]
-
-            points[in_a, -1] = random.randint(0, 99999999)
-            points[~in_a, -1] = random.randint(0, 99999999)
-            return torch.cat([split(points[in_a, :]), split(points[~in_a, :])])
-
-        data = split(data)
-        _, idx_sorted = torch.sort(data[:, -2], descending=False)
-        return data[idx_sorted, -1]
+    # @staticmethod
+    # def max_count_clustering(data: torch.Tensor, k: int = 10) -> torch.Tensor:
+    #     n = data.size(0)
+    #
+    #     clusters = torch.zeros(n, 1, device=data.device)
+    #     index = torch.arange(0, n, device=data.device).view(n, 1)
+    #     data = torch.cat([data, index, clusters], dim=1)
+    #
+    #     def split(points: torch.Tensor) -> torch.Tensor:
+    #         if points.size(0) <= k:
+    #             return points
+    #
+    #         distances = torch.cdist(points[:, :-2], points[:, :-2], p=2)
+    #         a, b = torch.nonzero(torch.eq(distances, torch.max(distances)))[0]
+    #         in_a = torch.le(distances[a, :], distances[b, :])
+    #         if torch.all(in_a) or not torch.any(in_a):
+    #             half_length = int(in_a.numel() / 2)
+    #             in_a[:half_length] = ~in_a[:half_length]
+    #
+    #         points[in_a, -1] = random.randint(0, 99999999)
+    #         points[~in_a, -1] = random.randint(0, 99999999)
+    #         return torch.cat([split(points[in_a, :]), split(points[~in_a, :])])
+    #
+    #     data = split(data)
+    #     _, idx_sorted = torch.sort(data[:, -2], descending=False)
+    #     return data[idx_sorted, -1]
 
     @staticmethod
     def sample_one_from_cluster(clusters: torch.Tensor, data: torch_geometric.data.Data) -> torch_geometric.data.Data:

@@ -21,7 +21,6 @@ class EventDataset(pl.LightningDataModule):
 
         self.train_dataset = dataset_class(mode="training", transform=None, **dataset_kwargs)
         self.val_dataset = dataset_class(mode="validation", transform=None, **dataset_kwargs)
-        self.test_dataset = dataset_class(mode="testing", transform=None, **dataset_kwargs)
 
     #########################################################################################################
     # Data Transformers #####################################################################################
@@ -49,10 +48,6 @@ class EventDataset(pl.LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         batch_size = self.__kwargs.get("batch_size", 1)
         return DataLoader(self.val_dataset, batch_size=batch_size, num_workers=2, shuffle=False)
-
-    def test_dataloader(self) -> DataLoader:
-        batch_size = self.__kwargs.get("batch_size", 1)
-        return DataLoader(self.test_dataset, batch_size=batch_size, num_workers=2, shuffle=False)
 
     #########################################################################################################
     # Transform Properties ##################################################################################
@@ -91,5 +86,4 @@ class EventDataset(pl.LightningDataModule):
     def __repr__(self):
         train_desc = self.train_dataset.__repr__()
         val_desc = self.val_dataset.__repr__()
-        test_desc = self.test_dataset.__repr__()
-        return f"{self.__class__.__name__}[Train: {train_desc}\nValidation: {val_desc}\nTesting: {test_desc}]"
+        return f"{self.__class__.__name__}[Train: {train_desc}\nValidation: {val_desc}]"

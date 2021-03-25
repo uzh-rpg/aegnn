@@ -6,7 +6,7 @@ from typing import Any, List
 
 
 class ConfusionMatrix(pl.callbacks.base.Callback):
-    """"
+    """"Log confusion matrix for validation predictions.
 
     Args:
         classes: list of class ids in the dataset, ordered in the same way as the groundtruth labels.

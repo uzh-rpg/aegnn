@@ -29,12 +29,15 @@ if __name__ == '__main__':
         logger.watch(model, log="all", log_freq=1)
 
     model_dir = os.path.join(log_dir, "models", logger.experiment.name)
-    log_cb = aegnn.callbacks.PHyperLogger(args, objects=[model, dm.pre_filter, dm.pre_transform, dm.transform])
-    confusion_matrix_cb = aegnn.callbacks.ConfusionMatrix(classes=dm.classes)
-    early_stopping_cb = pl.callbacks.EarlyStopping(monitor="Val/Loss", mode="min")
-    learning_rate_cb = pl.callbacks.LearningRateMonitor()
-    checkpoint_cb = pl.callbacks.ModelCheckpoint(dirpath=model_dir, save_top_k=1, monitor="Val/Loss", mode="min")
-    callbacks = [log_cb, confusion_matrix_cb, checkpoint_cb, learning_rate_cb]
+    callbacks = [
+        aegnn.callbacks.PHyperLogger(args),
+        aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
+        aegnn.callbacks.DatasetLogger(),
+        aegnn.callbacks.FileLogger(objects=[model, dm.pre_filter, dm.pre_transform, dm.transform]),
+        pl.callbacks.EarlyStopping(monitor="Val/Loss", mode="min", patience=20),
+        pl.callbacks.LearningRateMonitor(),
+        pl.callbacks.ModelCheckpoint(dirpath=model_dir, save_top_k=1, monitor="Val/Loss", mode="min")
+    ]
 
     trainer_kwargs = dict()
     trainer_kwargs["gpus"] = [args.gpu] if args.gpu else None

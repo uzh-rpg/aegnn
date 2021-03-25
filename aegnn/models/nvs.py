@@ -24,6 +24,8 @@ class NVS(MultiClassificationModel):
         self.norm3 = BatchNorm(in_channels=256)
         self.conv4 = SplineConv(256, out_channels=512, dim=2, kernel_size=5)
         self.norm4 = BatchNorm(in_channels=512)
+        self.conv5 = SplineConv(512, out_channels=512, dim=2, kernel_size=5)
+        self.norm5 = BatchNorm(in_channels=512)
         self.fc1 = Linear(16 * 512, out_features=1024)
         self.fc2 = Linear(1024, out_features=num_classes)
 
@@ -42,6 +44,10 @@ class NVS(MultiClassificationModel):
 
         data.x = elu(self.conv4(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm4(data.x)
+        data = self.voxel_pooling(data, size=[40, 33])
+
+        data.x = elu(self.conv5(data.x, data.edge_index, data.edge_attr))
+        data.x = self.norm5(data.x)
         cluster = voxel_grid(data.pos, data.batch, size=[60, 45])
         x, _ = max_pool_x(cluster, data.x, data.batch, size=16)
 
@@ -55,9 +61,9 @@ class NVS(MultiClassificationModel):
     # Optimization ######################################################################
     #####################################################################################
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), weight_decay=1e-5, **self.optimizer_kwargs)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
-        return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "Val/Loss"}
+        optimizer = torch.optim.Adam(self.parameters(), weight_decay=1e-4, **self.optimizer_kwargs)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1)
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     #####################################################################################
     # Modules ###########################################################################
