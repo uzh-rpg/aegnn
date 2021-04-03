@@ -12,7 +12,7 @@ if __name__ == '__main__':
     parser = arguments.add_dataset_arguments(parser)
     args = parser.parse_args()
 
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and args.device is not None:
         torch.cuda.init()
         torch.cuda.set_device(args.device)
     pl.seed_everything(args.seed)

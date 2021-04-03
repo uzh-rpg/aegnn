@@ -1,11 +1,13 @@
 import math
+import numpy as np
 import random
 import torch
 import torch_geometric
 
-from torch_geometric.nn.pool import radius_graph, voxel_grid
+from torch_geometric.nn.pool import radius_graph
 from torch_geometric.transforms import Cartesian
 
+from aegnn.octree import Box, OctTree
 from .base import Transform
 
 
@@ -23,16 +25,13 @@ class NVST(Transform):
     ["Graph-Based Object Classification for Neuromorphic VisionSensing" (Bi, 2019)]"""
 
     def __init__(self, r: float = 3, d_max: int = 32, dt: float = 0.03, beta: float = 0.5e-5,
-                 pool_x: int = 3, pool_y: int = 3, pool_dt: float = 0.001, seed: int = 12345):
+                 n_max: int = 8, seed: int = 12345):
         random.seed(seed)
         self.r = float(r)
         self.d_max = int(d_max)
         self.dt = float(dt)  # 30 ms section
         self.beta = beta
-
-        self.pool_x = pool_x
-        self.pool_y = pool_y
-        self.pool_dt = pool_dt
+        self.n_max = n_max
 
         self.__edge_attr = Cartesian(norm=True, cat=False)
 
@@ -57,13 +56,8 @@ class NVST(Transform):
 
         # Coarsen graph by creating clusters with each cluster having maximal `n_max` nodes. Then
         # select one node (max node) from each cluster and drop the other ones.
-        # clusters = self.max_count_clustering(data.pos, k=self.n_max)
-        # data = self.sample_one_from_cluster(clusters=clusters, data=data)
-
-        pseudo_batch = torch.zeros(data.num_nodes, device=data.x.device)
-        grid_size = [self.pool_x, self.pool_y, self.pool_dt]
-        cluster = voxel_grid(data.pos, batch=pseudo_batch, size=grid_size)
-        data = self.sample_one_from_cluster(cluster, data=data)
+        clusters = self.oct_tree_clustering(data.pos, k=self.n_max)
+        data = self.sample_one_from_cluster(clusters=clusters, data=data)
 
         # Generate a graph based on the euclidean spatial distance between events. Due to
         # the difference resolution in the spatial and temporal dimensions, we have to
@@ -78,48 +72,34 @@ class NVST(Transform):
 
     def __repr__(self):
         name = self.__class__.__name__
-        pool_description = f"pool_x={self.pool_x}, pool_y={self.pool_y}, pool_dt={self.pool_dt}"
-        return f"{name}[r={self.r}, d_max={self.d_max}, dt={self.dt}, beta={self.beta}, {pool_description}]"
+        return f"{name}[r={self.r}, d_max={self.d_max}, dt={self.dt}, beta={self.beta}, n_max={self.n_max}]"
 
     #####################################################################################
     # Modules ###########################################################################
     #####################################################################################
-    # @staticmethod
-    # def max_count_clustering(data: torch.Tensor, k: int = 10) -> torch.Tensor:
-    #     n = data.size(0)
-    #
-    #     clusters = torch.zeros(n, 1, device=data.device)
-    #     index = torch.arange(0, n, device=data.device).view(n, 1)
-    #     data = torch.cat([data, index, clusters], dim=1)
-    #
-    #     def split(points: torch.Tensor) -> torch.Tensor:
-    #         if points.size(0) <= k:
-    #             return points
-    #
-    #         distances = torch.cdist(points[:, :-2], points[:, :-2], p=2)
-    #         a, b = torch.nonzero(torch.eq(distances, torch.max(distances)))[0]
-    #         in_a = torch.le(distances[a, :], distances[b, :])
-    #         if torch.all(in_a) or not torch.any(in_a):
-    #             half_length = int(in_a.numel() / 2)
-    #             in_a[:half_length] = ~in_a[:half_length]
-    #
-    #         points[in_a, -1] = random.randint(0, 99999999)
-    #         points[~in_a, -1] = random.randint(0, 99999999)
-    #         return torch.cat([split(points[in_a, :]), split(points[~in_a, :])])
-    #
-    #     data = split(data)
-    #     _, idx_sorted = torch.sort(data[:, -2], descending=False)
-    #     return data[idx_sorted, -1]
+    @staticmethod
+    def oct_tree_clustering(x: torch.Tensor, k: int) -> np.ndarray:
+        if x.size(1) != 3:
+            raise ValueError("Input tensor must be 3-dimensional!")
+        x_min, y_min, z_min = x.min(dim=0).values.cpu().numpy()
+        width = float(x[:, 0].max()) - x_min + 1e-3
+        height = float(x[:, 1].max()) - y_min + 1e-3
+        depth = float(x[:, 2].max()) - z_min + 1e-6
+        domain = Box(width / 2, height / 2, depth / 2, width=width, height=height, depth=depth)
+
+        oct_tree = OctTree(domain, max_points=k)
+        x_tuples = [(float(px) - x_min, float(py) - y_min, float(pz) - z_min) for px, py, pz in x.cpu().numpy()]
+        for point in x_tuples:
+            oct_tree.insert(point)
+
+        clusters = np.zeros(x.size(0))
+        for i, point in enumerate(x_tuples):
+            clusters[i] = oct_tree.assign(point)
+        return clusters
 
     @staticmethod
-    def sample_one_from_cluster(clusters: torch.Tensor, data: torch_geometric.data.Data) -> torch_geometric.data.Data:
-        clusters_unique = clusters.unique(sorted=False)
-        index_select = torch.zeros(clusters_unique.numel(), device=clusters.device).long()
-
-        for i, cluster_id in enumerate(clusters_unique):
-            is_in_cluster = torch.eq(clusters, cluster_id)
-            cluster_idx = torch.nonzero(is_in_cluster)
-            index_select[i] = cluster_idx[0]
+    def sample_one_from_cluster(clusters: np.ndarray, data: torch_geometric.data.Data) -> torch_geometric.data.Data:
+        _, index_select = np.unique(clusters, return_index=True)  # first occurrence of every unique value
 
         data.pos = data.pos[index_select, :]
         data.x = data.x[index_select, :]
