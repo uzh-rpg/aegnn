@@ -13,31 +13,13 @@ class EventDataset(pl.LightningDataModule):
     def __init__(self, dataset_class: Dataset.__class__, transform=None, pre_transform=None, pre_filter=None,
                  classes: List[str] = None, batch_size: int = 64, shuffle: bool = True,
                  num_workers: int = 8, pin_memory: bool = False):
-        tf_train = [transform] if transform is not None else None
-        super().__init__(train_transforms=tf_train)
+        super().__init__()
 
         self.__kwargs = dict(batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
         dataset_kwargs = dict(pre_transform=pre_transform, pre_filter=pre_filter, root=self.root, classes=classes)
 
-        self.train_dataset = dataset_class(mode="training", transform=None, **dataset_kwargs)
-        self.val_dataset = dataset_class(mode="validation", transform=None, **dataset_kwargs)
-
-    #########################################################################################################
-    # Data Transformers #####################################################################################
-    #########################################################################################################
-    @staticmethod
-    def dataset_on_each(dataset: Dataset) -> Dataset:
-        indices, class_added = [], []
-
-        for idx, sample in enumerate(dataset):
-            y = sample.y
-            if y not in class_added:
-                class_added.append(y)
-                indices.append(idx)
-            if len(class_added) == len(dataset.classes):
-                break
-
-        return dataset.index_select(indices)
+        self.train_dataset = dataset_class(mode="training", transform=transform, **dataset_kwargs)
+        self.val_dataset = dataset_class(mode="validation", transform=transform, **dataset_kwargs)
 
     #########################################################################################################
     # Data Loaders ##########################################################################################
@@ -46,7 +28,7 @@ class EventDataset(pl.LightningDataModule):
         return DataLoader(self.train_dataset, **self.__kwargs)
 
     def val_dataloader(self) -> DataLoader:
-        batch_size = self.__kwargs.get("batch_size", 1)
+        batch_size = min(self.__kwargs.get("batch_size", 1), len(self.val_dataset))
         return DataLoader(self.val_dataset, batch_size=batch_size, num_workers=2, shuffle=False)
 
     #########################################################################################################
@@ -54,7 +36,7 @@ class EventDataset(pl.LightningDataModule):
     #########################################################################################################
     @property
     def transform(self) -> Union[Transform, None]:
-        return self.train_transforms
+        return self.train_dataset.transform
 
     @property
     def pre_transform(self) -> Union[Transform, None]:

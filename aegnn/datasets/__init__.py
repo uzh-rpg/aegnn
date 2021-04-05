@@ -1,7 +1,6 @@
 import aegnn.datasets.utils
 
-from aegnn.datasets.base import EventDataset
-from aegnn.datasets.cifar10 import CIFAR10
+from aegnn.datasets.base.event_ds import EventDataset
 from aegnn.datasets.ncaltech101 import NCaltech101
 
 ################################################################################################
@@ -18,7 +17,7 @@ import aegnn.transforms
 
 def by_name(name: str, **kwargs) -> typing.Union[EventDataset, None]:
     from aegnn.utils import select_by_name
-    return select_by_name([NCaltech101, CIFAR10], name=name, **kwargs)
+    return select_by_name([NCaltech101], name=name, **kwargs)
 
 
 def from_args(args: argparse.Namespace) -> typing.Union[EventDataset, None]:

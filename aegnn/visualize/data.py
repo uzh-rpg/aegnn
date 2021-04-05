@@ -26,6 +26,7 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
     # Although the image dimensions are not given, they are still required for plotting the histogram.
     # Therefore, if they are not given, it is assumed that the coordinates are in between [0, img_width]
     # while the `img_width` is approximated by the maximum value in the x-dimension (similar for y-direction).
+    x_min, y_min = xy[:, :2].min(axis=0)
     if not img_width:
         img_width = int(xy[:, 0].max())
         logging.debug(f"Inferred image width to be {img_width}")
@@ -33,8 +34,8 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
         img_height = int(xy[:, 1].max())
         logging.debug(f"Inferred image height to be {img_height}")
 
-    x_bins = np.linspace(0, img_width, num=img_width + 1)
-    y_bins = np.linspace(0, img_height, num=img_height + 1)
+    x_bins = np.linspace(x_min, img_width, num=img_width + 1)
+    y_bins = np.linspace(y_min, img_height, num=img_height + 1)
     histogram, _, _ = np.histogram2d(xy[:, 0], xy[:, 1], bins=(x_bins, y_bins))
     if max_count > 0:
         histogram[histogram > max_count] = max_count

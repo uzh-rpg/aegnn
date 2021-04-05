@@ -5,6 +5,7 @@ from nestargs.parser import NestedArgumentParser
 def add_dataset_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     parser.add_argument("--dataset", action="store", default="ncaltech101", type=str)
     parser.add_argument("--seed", action="store", default=12345, type=int)
+    parser.add_argument("--debug", action="store_true")
 
     group = parser.add_argument_group("data")
     group.add_argument("--data.batch-size", action="store", default=64, type=int)
@@ -23,7 +24,7 @@ def add_dataset_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
 
 def add_trainer_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     group = parser.add_argument_group("train")
-    group.add_argument("--train.max-epochs", action="store", default=200, type=int)
+    group.add_argument("--train.max-epochs", action="store", default=150, type=int)
     group.add_argument("--train.overfit-batches", action="store", default=0.0, type=int)
     group.add_argument("--train.log-gradients", action="store_true")
     group.add_argument("--train.log-steps", action="store", default=10, type=int)

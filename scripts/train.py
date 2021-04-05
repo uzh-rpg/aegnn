@@ -2,6 +2,7 @@ import nestargs
 import os
 import pytorch_lightning as pl
 import pytorch_lightning.loggers
+import torch_geometric
 import wandb
 
 import aegnn
@@ -14,8 +15,9 @@ if __name__ == '__main__':
     parser = arguments.add_dataset_arguments(parser)
     parser = arguments.add_trainer_arguments(parser)
     args = parser.parse_args()
-
+    torch_geometric.set_debug(args.debug)
     pl.seed_everything(args.seed)
+
     arguments.check_arguments(args)
 
     project_name = f"aegnn-{args.dataset}"
@@ -34,9 +36,9 @@ if __name__ == '__main__':
         aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
         aegnn.callbacks.DatasetLogger(),
         aegnn.callbacks.FileLogger(objects=[model, dm.pre_filter, dm.pre_transform, dm.transform]),
-        pl.callbacks.EarlyStopping(monitor="Val/Loss", mode="min", patience=20),
+        pl.callbacks.EarlyStopping(monitor="Val/Accuracy", mode="max", min_delta=0.02, patience=20),
         pl.callbacks.LearningRateMonitor(),
-        pl.callbacks.ModelCheckpoint(dirpath=model_dir, save_top_k=1, monitor="Val/Loss", mode="min")
+        # pl.callbacks.ModelCheckpoint(dirpath=model_dir, save_top_k=1, monitor="Val/Loss", mode="min")
     ]
 
     trainer_kwargs = dict()
@@ -49,6 +51,7 @@ if __name__ == '__main__':
     trainer_kwargs["gradient_clip_val"] = args.train.gradient_clipping
     trainer_kwargs["track_grad_norm"] = 2 if args.train.log_gradients else -1
     trainer_kwargs["log_every_n_steps"] = args.train.log_steps
+    trainer_kwargs["accelerator"] = None
 
     trainer = pl.Trainer(logger=logger, callbacks=callbacks, **trainer_kwargs)
     trainer.fit(model, datamodule=dm)

@@ -7,7 +7,7 @@ import torch_geometric
 from typing import Tuple, Optional
 
 import aegnn.datasets.utils as utils
-from .base import EventDataset
+from .base.event_ds import EventDataset
 
 
 class NCaltech101(EventDataset):
