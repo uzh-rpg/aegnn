@@ -35,8 +35,8 @@ if __name__ == '__main__':
     random.seed(args.seed)
 
     root_path = os.path.join(args.root, args.dataset)
-    train_path = os.path.join(root_path, "training")
-    val_path = os.path.join(root_path, "validation")
+    train_path = os.path.join(root_path, "training", "raw")
+    val_path = os.path.join(root_path, "validation", "raw")
 
     # Iterate over all classes, split them in training and testing samples and copy the
     # assigned files to either directory.

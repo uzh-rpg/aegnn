@@ -1,10 +1,10 @@
 import logging
 import numpy as np
-import torch
 import torch_geometric
 import tqdm
 
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
 
 
 def event_histogram(data: torch_geometric.data.Data, img_width: float = None, img_height: float = None,
@@ -34,6 +34,8 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
         img_height = int(xy[:, 1].max())
         logging.debug(f"Inferred image height to be {img_height}")
 
+    # Plot the spatial component of the events stacked in a 2d histogram. For outlier rejection reset
+    # bins with very high event count to a lower threshold.
     x_bins = np.linspace(x_min, img_width, num=img_width + 1)
     y_bins = np.linspace(y_min, img_height, num=img_height + 1)
     histogram, _, _ = np.histogram2d(xy[:, 0], xy[:, 1], bins=(x_bins, y_bins))
@@ -43,6 +45,17 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
     ax.imshow(histogram)
     ax.set_title(f"{class_id}")
     ax.set_axis_off()
+
+    # If annotations are defined, add the to the plot as a bounding box.
+    bounding_box = getattr(data, "bb", None)
+    if bounding_box is not None:
+        corner_point = (bounding_box[0], bounding_box[1])
+        h = bounding_box[2] - bounding_box[0]
+        w = bounding_box[5] - bounding_box[1]
+        rect = patches.Rectangle(corner_point, w, h, linewidth=1, edgecolor='r', facecolor='none')
+        ax.text(*corner_point, s=class_id, fontdict=dict(multialignment="left", color="black", backgroundcolor="red"))
+        ax.add_patch(rect)
+
     if return_histogram:
         return ax, histogram
     return ax
