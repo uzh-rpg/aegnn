@@ -4,13 +4,13 @@ import pytorch_lightning as pl
 from torch_geometric.data import Dataset, DataLoader
 from typing import List, Tuple, Union
 
-from aegnn.filters import Filter
-from aegnn.transforms import Transform
+from aegnn.utils.filters import Filter
+from aegnn.utils.transforms import Transform
 
 
 class EventDataset(pl.LightningDataModule):
 
-    def __init__(self, dataset_class: Dataset.__class__, transform=None, pre_transform=None, pre_filter=None,
+    def __init__(self, dataset_class: Dataset.__class__, transforms=None, pre_transform=None, pre_filter=None,
                  classes: List[str] = None, batch_size: int = 64, shuffle: bool = True,
                  num_workers: int = 8, pin_memory: bool = False):
         super().__init__()
@@ -18,8 +18,9 @@ class EventDataset(pl.LightningDataModule):
         self.__kwargs = dict(batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
         dataset_kwargs = dict(pre_transform=pre_transform, pre_filter=pre_filter, root=self.root, classes=classes)
 
-        self.train_dataset = dataset_class(mode="training", transform=transform, **dataset_kwargs)
-        self.val_dataset = dataset_class(mode="validation", transform=transform, **dataset_kwargs)
+        transforms = transforms or []
+        self.train_dataset = dataset_class(mode="training", transforms=transforms, **dataset_kwargs)
+        self.val_dataset = dataset_class(mode="validation", transforms=transforms, **dataset_kwargs)
 
     #########################################################################################################
     # Data Loaders ##########################################################################################
@@ -35,8 +36,8 @@ class EventDataset(pl.LightningDataModule):
     # Transform Properties ##################################################################################
     #########################################################################################################
     @property
-    def transform(self) -> Union[Transform, None]:
-        return self.train_dataset.transform
+    def transforms(self) -> List[Transform]:
+        return self.train_dataset.transform.transforms
 
     @property
     def pre_transform(self) -> Union[Transform, None]:

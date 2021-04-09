@@ -13,6 +13,6 @@ import typing
 
 
 def by_name(name: str, **kwargs) -> typing.Union[pl.LightningModule, None]:
-    from aegnn.utils import select_by_name
+    from aegnn.utils.io import select_by_name
     choices = [HistCNN, NVS, RNVS]
     return select_by_name(choices, name=name, **kwargs)

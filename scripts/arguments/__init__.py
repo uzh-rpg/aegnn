@@ -14,7 +14,7 @@ def add_dataset_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     group.add_argument("--data.pin-memory", action="store_true")
 
     group = parser.add_argument_group("tf")
-    group.add_argument("--tf.transform", action="store", default=None, type=str)
+    group.add_argument("--tf.transforms", action="store", default=[], type=lambda x: x.split(":"))
     group.add_argument("--tf.pre-transform", action="store", default="default", type=str)
     group.add_argument("--tf.pre-filter", action="store", default="default", type=str)
     group.add_argument("--tf.classes", action="store", type=lambda x: x.split(":"), default=[])

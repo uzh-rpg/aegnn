@@ -1,20 +1,20 @@
-from aegnn.transforms.fsf import FSF
-from aegnn.transforms.nvst import NVST
+from aegnn.utils.filters.class_id import ClassID
 
 ################################################################################################
 # Access functions #############################################################################
 ################################################################################################
 import typing
-from .base import Transform
+from .base import Filter
 
 
-def by_name(name: str, **kwargs) -> typing.Union[Transform, None]:
-    from aegnn.utils import select_by_name
-    return select_by_name([FSF, NVST], name=name, **kwargs)
+def by_name(name: str, **kwargs) -> typing.Union[Filter, None]:
+    from ..io import select_by_name
+    choices = [ClassID]
+    return select_by_name(choices, name=name, **kwargs)
 
 
-def from_description(description: str) -> typing.Union[Transform, None]:
-    from aegnn.utils import parse_description
+def from_description(description: str) -> typing.Union[Filter, None]:
+    from ..io import parse_description
     if description.lower() == "none":
         return None
     name, kwargs = parse_description(description)

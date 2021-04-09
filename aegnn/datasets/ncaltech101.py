@@ -14,12 +14,13 @@ class NCaltech101(EventDataset):
 
     class NCaltech101DS(torch_geometric.data.Dataset):
 
-        def __init__(self, root: str, transform, pre_transform, pre_filter, classes=None, mode: str = "training"):
+        def __init__(self, root: str, transforms, pre_transform, pre_filter, classes=None, mode: str = "training"):
             root_mode = os.path.join(root, mode)
             if not os.path.isdir(root_mode):
                 raise FileNotFoundError(f"Mode {mode} not found at root {root}!")
 
             self.classes = classes or os.listdir(os.path.join(root_mode, "raw"))
+            transform = torch_geometric.transforms.Compose(transforms)
             super().__init__(root=root_mode, transform=transform, pre_transform=pre_transform, pre_filter=pre_filter)
 
         def get(self, idx: int) -> torch_geometric.data.Data:
