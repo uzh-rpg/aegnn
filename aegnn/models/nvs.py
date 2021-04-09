@@ -62,7 +62,7 @@ class NVS(MultiClassificationModel):
     #####################################################################################
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), weight_decay=1e-4, **self.optimizer_kwargs)
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 110], gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     #####################################################################################
