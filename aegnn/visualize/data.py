@@ -47,14 +47,17 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
     ax.set_axis_off()
 
     # If annotations are defined, add the to the plot as a bounding box.
-    bounding_box = getattr(data, "bb", None)
-    if bounding_box is not None:
-        corner_point = (bounding_box[0], bounding_box[1])
-        h = bounding_box[2] - bounding_box[0]
-        w = bounding_box[5] - bounding_box[1]
-        rect = patches.Rectangle(corner_point, w, h, linewidth=1, edgecolor='r', facecolor='none')
-        ax.text(*corner_point, s=class_id, fontdict=dict(multialignment="left", color="black", backgroundcolor="red"))
-        ax.add_patch(rect)
+    bounding_boxes = getattr(data, "bb", None)
+    if bounding_boxes is not None:
+        assert len(bounding_boxes.shape) == 2  # (num_bbs, corner points)
+        bb_font_dict = dict(multialignment="left", color="black", backgroundcolor="red")
+        for bounding_box in bounding_boxes:
+            corner_point = (bounding_box[0], bounding_box[1])
+            h = bounding_box[2] - bounding_box[0]
+            w = bounding_box[5] - bounding_box[1]
+            rect = patches.Rectangle(corner_point, w, h, linewidth=1, edgecolor='r', facecolor='none')
+            ax.text(*corner_point, s=class_id, fontdict=bb_font_dict)
+            ax.add_patch(rect)
 
     if return_histogram:
         return ax, histogram

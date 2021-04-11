@@ -2,7 +2,7 @@
 For speedup, the OctTree has been implemented in Cython. Therefore, when altering the code, it has to be
 re-compiled, as described in the Readme. The code is available from the module `aegnn.octree`.
 """
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 
 cdef class Box:

@@ -25,5 +25,5 @@ class DatasetLogger(pl.callbacks.base.Callback):
 
         # Log the average value over each graph property, average being the estimated mean of each
         # property over all graphs.
-        log_info = {key: np.mean(values) for key, values in log_info.items()}
+        log_info = {key: np.mean(values) for key, values in log_info.items() if values is not None}
         model.logger.log_hyperparams(log_info)

@@ -31,7 +31,7 @@ class NCaltech101(EventDataset):
         # Processing ############################################################################################
         #########################################################################################################
         def process(self):
-            def load(raw_file: str) -> Tuple[torch_geometric.data.Data, str]:
+            def load(raw_file: str) -> torch_geometric.data.Data:
                 f = open(raw_file, 'rb')
                 raw_data = np.fromfile(f, dtype=np.uint8)
                 f.close()
@@ -45,23 +45,27 @@ class NCaltech101(EventDataset):
                 all_p = all_p.astype(np.float64)
                 all_p[all_p == 0] = -1
                 events = np.column_stack((all_x, all_y, all_ts, all_p))
-                events = torch.from_numpy(events).cuda()
+                events = torch.from_numpy(events).float().cuda()
 
-                obj_class = raw_file.split("/")[-2]
+                obj_class = read_class_id(raw_file)
                 file_id = raw_file.split("/")[-1]
-                data_obj = torch_geometric.data.Data(x=events, pos=events[:, :3], class_id=obj_class, file_id=file_id)
-                return data_obj, obj_class
+                x, pos = events[:, -1:], events[:, :3]   # x = polarity, pos = spatio-temporal position
+                data_obj = torch_geometric.data.Data(x=x, pos=pos, class_id=obj_class, file_id=file_id)
+                return data_obj
+
+            def read_class_id(raw_file: str) -> str:
+                return raw_file.split("/")[-2]
 
             def read_annotations(annotation_file: str) -> np.ndarray:
                 file_name = os.path.basename(annotation_file).replace("image", "annotation")
                 f = open(os.path.join(os.path.dirname(annotation_file), file_name))
                 annotations = np.fromfile(f, dtype=np.int16)
                 f.close()
-                return np.array(annotations[2:10])
+                return np.array(annotations[2:10]).reshape(1, -1)
 
             annotations_dir = os.path.join(os.environ["AEGNN_DATA_DIR"], "ncaltech101", "annotations")
             utils.data.process_events(load, raw_dir=self.raw_dir, raw_files=self.raw_file_names,
-                                      target_dir=self.processed_dir, classes=self.classes,
+                                      target_dir=self.processed_dir, classes=self.classes, read_class_id=read_class_id,
                                       pre_filter=self.pre_filter, pre_transform=self.pre_transform,
                                       annotations_dir=annotations_dir, read_annotations=read_annotations)
 
