@@ -28,7 +28,7 @@ if __name__ == '__main__':
     model = aegnn.models.by_name(args.model, num_classes=dm.num_classes, img_shape=dm.img_shape)
     logger = pl.loggers.WandbLogger(project=project_name, save_dir=log_dir, settings=log_settings, sync_step=True)
     if args.train.log_gradients:
-        logger.watch(model, log="all", log_freq=1)
+        logger.watch(model, log="gradients")  # gradients plot every 100 training batches
 
     model_dir = os.path.join(log_dir, "models", logger.experiment.name)
     callbacks = [
