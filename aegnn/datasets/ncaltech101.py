@@ -1,3 +1,4 @@
+import functools
 import glob
 import numpy as np
 import os
@@ -37,15 +38,15 @@ class NCaltech101(EventDataset):
             annotations_dir = os.path.join(os.environ["AEGNN_DATA_DIR"], "ncaltech101", "annotations")
 
             print("Building class dictionary")
-            object_class_ids = utils.data.build_class_dict(self.raw_files, classes=self.classes,
-                                                           read_class_id=self.read_class_id)
+            raw_files = self.raw_paths
+            object_class_ids = utils.data.build_class_dict(raw_files, self.classes, read_class_id=self.read_class_id)
 
             # Processing the raw files in parallel processes. Importantly, the functions must therefore be able to be
             # pickled, i.e. not using dynamic types or not-shared class variables.
             print(f"Processing raw files with {self.num_workers} workers")
-            task_manager = TaskManager(self.num_workers, queue_size=10, callback=None, total=len(self.raw_files))
+            task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(raw_files))
             for rf in self.raw_file_names:
-                task_manager.queue(utils.data.processing, rf=rf, raw_dir=self.raw_dir, target_dir=self.target_dir,
+                task_manager.queue(utils.data.processing, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir,
                                    object_class_ids=object_class_ids, load_func=self.load, wdt=0.03,
                                    pre_filter=self.pre_filter, pre_transform=self.pre_transform,
                                    annotations_dir=annotations_dir, read_annotations=self.read_annotations)
@@ -88,16 +89,17 @@ class NCaltech101(EventDataset):
         #########################################################################################################
         # Files #################################################################################################
         #########################################################################################################
-        @property
+        @functools.cached_property
         def raw_file_names(self):
-            return glob.glob(os.path.join(self.raw_dir, "*", "*.bin"), recursive=True)
+            files = glob.glob(os.path.join(self.raw_dir, "*", "*.bin"), recursive=True)
+            return [os.path.relpath(f, start=self.raw_dir) for f in files]
 
-        @property
+        @functools.cached_property
         def processed_file_names(self):
-            files = glob.glob(os.path.join(self.raw_dir, "*", "*.pt"), recursive=True)
+            files = glob.glob(os.path.join(self.processed_dir, "*", "*.pt"), recursive=True)
             if len(files) == 0:
                 return ["unknown"]
-            return files
+            return [os.path.relpath(f, start=self.processed_dir) for f in files]
 
         def download(self):
             pass
