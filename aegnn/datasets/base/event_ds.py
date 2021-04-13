@@ -16,7 +16,8 @@ class EventDataset(pl.LightningDataModule):
         super().__init__()
 
         self.__kwargs = dict(batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
-        dataset_kwargs = dict(pre_transform=pre_transform, pre_filter=pre_filter, root=self.root, classes=classes)
+        dataset_kwargs = dict(pre_transform=pre_transform, pre_filter=pre_filter, root=self.root,
+                              classes=classes, num_workers=num_workers)
 
         transforms = transforms if all(transforms) else []
         self.train_dataset = dataset_class(mode="training", transforms=transforms, **dataset_kwargs)
