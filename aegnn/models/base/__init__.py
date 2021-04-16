@@ -1,0 +1,1 @@
+from aegnn.models.base.classification import MultiClassificationModel
