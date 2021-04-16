@@ -22,7 +22,7 @@ class RNVS(MultiClassificationModel):
         self.res2 = self.ResidualBlock(128, out_channel=256, dim=2, k=5)
         self.res3 = self.ResidualBlock(256, out_channel=512, dim=2, k=5)
 
-        self.fc1 = Linear(64 * 512, out_features=1024)
+        self.fc1 = Linear(16 * 512, out_features=1024)
         self.fc2 = Linear(1024, out_features=num_classes)
 
     def forward(self, data: torch_geometric.data.Batch) -> torch.Tensor:
@@ -36,10 +36,10 @@ class RNVS(MultiClassificationModel):
         data = NVS.voxel_pooling(data, size=[30, 23])
 
         data = self.res3(data)
-        cluster = voxel_grid(data.pos[:, :2], batch=data.batch, size=[60, 45])
-        x, _ = max_pool_x(cluster, x=data.x, batch=data.batch, size=64)
+        cluster = voxel_grid(data.pos, batch=data.batch, size=[60, 45])
+        x, _ = max_pool_x(cluster, data.x, batch=data.batch, size=16)
 
-        x = x.view(-1, 64 * 512)
+        x = x.view(-1, 16 * 512)
         x = elu(self.fc1(x))
         x = dropout(x, p=0.5, training=self.training)
         x = self.fc2(x)  # no softmax since cross-entropy loss expects raw logits
@@ -49,9 +49,9 @@ class RNVS(MultiClassificationModel):
     # Optimization ######################################################################
     #####################################################################################
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), **self.optimizer_kwargs)
+        optimizer = torch.optim.Adam(self.parameters(), weight_decay=1e-4, **self.optimizer_kwargs)
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 100], gamma=0.1)
-        return [optimizer], [scheduler]
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     #####################################################################################
     # Modules ###########################################################################
@@ -67,7 +67,7 @@ class RNVS(MultiClassificationModel):
             self.shortcut_conv = SplineConv(in_channel, out_channel, dim=dim, kernel_size=1)
             self.shortcut_bn = BatchNorm(out_channel)
 
-        def forward(self, data: torch_geometric.data.Batch) -> torch_geometric.data.Batch:
+        def __call__(self, data: torch_geometric.data.Batch) -> torch_geometric.data.Batch:
             x_sc = data.x.clone()
             x_sc = self.shortcut_conv(x_sc, data.edge_index, data.edge_attr)
             x_sc = self.shortcut_bn(x_sc)

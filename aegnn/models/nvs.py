@@ -16,8 +16,10 @@ class NVS(MultiClassificationModel):
 
     def __init__(self, num_classes: int, **kwargs):
         super().__init__(learning_rate=0.001, num_classes=num_classes)
-        self.conv1 = SplineConv(1, out_channels=64, dim=2, kernel_size=5)
-        self.norm1 = BatchNorm(in_channels=64)
+        self.conv1 = SplineConv(1, out_channels=32, dim=2, kernel_size=5)
+        self.norm1 = BatchNorm(in_channels=32)
+        self.conv12 = SplineConv(32, out_channels=64, dim=2, kernel_size=5)
+        self.norm12 = BatchNorm(in_channels=64)
         self.conv2 = SplineConv(64, out_channels=128, dim=2, kernel_size=5)
         self.norm2 = BatchNorm(in_channels=128)
         self.conv3 = SplineConv(128, out_channels=256, dim=2, kernel_size=5)
@@ -26,13 +28,22 @@ class NVS(MultiClassificationModel):
         self.norm4 = BatchNorm(in_channels=512)
         self.conv5 = SplineConv(512, out_channels=512, dim=2, kernel_size=5)
         self.norm5 = BatchNorm(in_channels=512)
-        self.fc1 = Linear(16 * 512, out_features=1024)
-        self.fc2 = Linear(1024, out_features=num_classes)
+        self.conv6 = SplineConv(512, out_channels=1024, dim=2, kernel_size=5)
+        self.norm6 = BatchNorm(in_channels=1024)
+
+        self.fc1 = Linear(16 * 1024, out_features=2048)
+        self.fc2 = Linear(2048, out_features=1024)
+        self.fc3 = Linear(1024, out_features=512)
+        self.fc4 = Linear(512, out_features=num_classes)
 
     def forward(self, data: torch_geometric.data.Batch) -> torch.Tensor:
         data.x = elu(self.conv1(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm1(data.x)
         data = self.voxel_pooling(data, size=[4, 3])
+
+        data.x = elu(self.conv12(data.x, data.edge_index, data.edge_attr))
+        data.x = self.norm12(data.x)
+        data = self.voxel_pooling(data, size=[8, 6])
 
         data.x = elu(self.conv2(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm2(data.x)
@@ -48,13 +59,21 @@ class NVS(MultiClassificationModel):
 
         data.x = elu(self.conv5(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm5(data.x)
+        data = self.voxel_pooling(data, size=[60, 45])
+
+        data.x = elu(self.conv6(data.x, data.edge_index, data.edge_attr))
+        data.x = self.norm6(data.x)
         cluster = voxel_grid(data.pos, data.batch, size=[60, 45])
         x, _ = max_pool_x(cluster, data.x, data.batch, size=16)
 
-        x = x.view(-1, 16 * 512)
+        x = x.view(-1, 16 * 1024)
         x = elu(self.fc1(x))
         x = dropout(x, p=0.5, training=self.training)
-        x = self.fc2(x)
+        x = elu(self.fc2(x))
+        x = dropout(x, p=0.5, training=self.training)
+        x = elu(self.fc3(x))
+        x = dropout(x, p=0.5, training=self.training)
+        x = self.fc4(x)
         return x
 
     #####################################################################################
