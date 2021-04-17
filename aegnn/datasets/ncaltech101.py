@@ -43,21 +43,36 @@ class NCaltech101(EventDataset):
 
             # Processing the raw files in parallel processes. Importantly, the functions must therefore be able to be
             # pickled, i.e. not using dynamic types or not-shared class variables.
-            print(f"Processing raw files with {self.num_workers} workers")
-            task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(raw_files))
-            for rf in self.raw_file_names:
-                task_manager.queue(utils.data.processing, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir,
-                                   object_class_ids=object_class_ids, load_func=self.load, wdt=0.03,
-                                   pre_filter=self.pre_filter, pre_transform=self.pre_transform,
-                                   annotations_dir=annotations_dir, read_annotations=self.read_annotations)
+            if self.num_workers > 1:
+                print(f"Processing raw files with {self.num_workers} workers")
+                task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(raw_files))
+                process, args = task_manager.queue, [utils.data.processing]
+            else:
+                print("Processing raw files with a single process")
+                process, args = utils.data.processing, []
+
+            # Processing raw files either in parallel or sequentially (debug).
+            for rf in self.raw_paths:
+                process(*args, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir,
+                        load_func=self.load, object_class_ids=object_class_ids, wdt=0.03,
+                        pre_filter=self.pre_filter, pre_transform=self.pre_transform,
+                        annotations_dir=annotations_dir, read_annotations=self.read_annotations)
 
         @staticmethod
-        def read_annotations(annotation_file: str) -> np.ndarray:
+        def read_annotations(annotation_file: str, label: int) -> np.ndarray:
             file_name = os.path.basename(annotation_file).replace("image", "annotation")
+
             f = open(os.path.join(os.path.dirname(annotation_file), file_name))
             annotations = np.fromfile(f, dtype=np.int16)
+            annotations = np.array(annotations[2:10])
             f.close()
-            return np.array(annotations[2:10]).reshape(1, -1)
+
+            return np.array([
+                annotations[0], annotations[1],  # upper-left corner
+                annotations[2] - annotations[0],  # width
+                annotations[5] - annotations[1],  # height
+                label
+            ]).reshape(1, -1)
 
         @staticmethod
         def read_class_id(raw_file: str) -> str:

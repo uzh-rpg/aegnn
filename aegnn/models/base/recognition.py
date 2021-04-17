@@ -6,7 +6,7 @@ import pytorch_lightning.metrics.functional as pl_metrics
 from torch.nn.functional import softmax
 
 
-class MultiClassificationModel(pl.LightningModule):
+class RecognitionModel(pl.LightningModule):
 
     def __init__(self, num_classes: int, learning_rate: float = 1e-3):
         super().__init__()
@@ -17,7 +17,7 @@ class MultiClassificationModel(pl.LightningModule):
     ###############################################################################################
     # Steps #######################################################################################
     ###############################################################################################
-    def training_step(self, batch: torch_geometric.data.Batch, batch_idx: int) -> float:
+    def training_step(self, batch: torch_geometric.data.Batch, batch_idx: int) -> torch.Tensor:
         outputs = self.forward(data=batch)
         loss = self.criterion(outputs, target=batch.y)
 

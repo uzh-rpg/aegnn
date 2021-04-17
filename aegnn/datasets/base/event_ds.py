@@ -19,7 +19,7 @@ class EventDataset(pl.LightningDataModule):
         dataset_kwargs = dict(pre_transform=pre_transform, pre_filter=pre_filter, root=self.root,
                               classes=classes, num_workers=num_workers)
 
-        transforms = transforms if all(transforms) else []
+        transforms = transforms if (transforms is not None and all(transforms)) else []
         self.train_dataset = dataset_class(mode="training", transforms=transforms, **dataset_kwargs)
         self.val_dataset = dataset_class(mode="validation", transforms=transforms, **dataset_kwargs)
 

@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import random
 import torch
@@ -7,10 +8,9 @@ from tqdm import tqdm
 from typing import Callable, Dict, List
 
 
-
 def processing(rf: str, raw_dir: str, target_dir: str, object_class_ids: Dict[str, int], wdt: float,
                load_func: Callable, pre_filter: Callable = None, pre_transform: Callable = None,
-               annotations_dir: str = None, read_annotations: Callable = None):
+               annotations_dir: str = None, read_annotations: Callable[[str, int], np.ndarray] = None):
     """Processing raw file on cuda device for object detection/recognition task, including the following steps:
 
     1. Loading and converting the data to `torch_geometric.data.Data` object.
@@ -50,7 +50,7 @@ def processing(rf: str, raw_dir: str, target_dir: str, object_class_ids: Dict[st
         # Add annotations, if they are defined for the given file.
         if annotations_dir:
             af = rf.replace(raw_dir, annotations_dir)
-            data_obj.bb = read_annotations(af)
+            data_obj.bb = read_annotations(af, data_obj.y)
 
         # Filter a random window of length `dt` from the sample. To do so, find the number of
         # windows with length `dt` in the data, sample one of them and filter the data accordingly.

@@ -1,8 +1,8 @@
 import numpy as np
 import pytorch_lightning as pl
-import sklearn.metrics
 import wandb
 
+from sklearn.metrics import confusion_matrix
 from typing import Any, List
 
 
@@ -29,11 +29,11 @@ class ConfusionMatrix(pl.callbacks.base.Callback):
         self.__y_true = np.concatenate([self.__y_true, y_np]).astype(int)
 
     def on_validation_end(self, trainer: pl.Trainer, model: pl.LightningModule) -> None:
-        cm = sklearn.metrics.confusion_matrix(y_true=self.__y_true, y_pred=self.__y_hat)
+        cm = confusion_matrix(y_true=self.__y_true, y_pred=self.__y_hat)
         np.fill_diagonal(cm, 0)  # set correct elements to zero
 
         data = []
-        max_index = cm.flatten().argsort()[-20:][::-1]
+        max_index = cm.flatten().argsort()[-20:][::-1]  # 20th class pairs with highest mismatch
         for idx in max_index:
             i, j = np.unravel_index(idx, cm.shape)
             data.append([self.classes[i], self.classes[j], cm[i, j]])
