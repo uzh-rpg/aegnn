@@ -71,11 +71,9 @@ class NVS(MultiClassificationModel):
     @staticmethod
     def voxel_pooling(data: torch_geometric.data.Batch, size: List[float]) -> torch_geometric.data.Batch:
         """Max Pooling based on uniform-voxel-based clusters.
-
         The graph nodes are clustered using a uniformly-sized voxel grid, based on their positions (`pos`-attribute).
         Afterwards, max pooling is applied to each cluster, i.e. taking the maximum features out of each cluster.
         ["Graph-Based Object Classification for Neuromorphic VisionSensing" (Bi, 2019)]
-
         :param data: input graph data batch.
         :param size: size of voxel grid (same over all dimensions).
         """
