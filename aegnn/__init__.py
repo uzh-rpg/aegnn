@@ -1,3 +1,4 @@
+import aegnn.asyncronous
 import aegnn.utils
 import aegnn.callbacks
 import aegnn.datasets

@@ -89,10 +89,10 @@ def graph(data: torch_geometric.data.Data, ax: plt.Axes = None):
 
     pos_x = data.pos[:, 0]
     pos_y = data.pos[:, 1]
-    ax.plot(pos_x, pos_y, "o")
 
     edge_index = getattr(data, "edge_index")
     if edge_index is not None:
         for edge in tqdm.tqdm(edge_index.T):
             pos_edge = data.pos[[edge[0], edge[1]], :]
-            ax.plot(pos_edge[:, 0], pos_edge[:, 1], "-")
+            ax.plot(pos_edge[:, 0], pos_edge[:, 1], "k-", linewidth=0.1)
+    ax.plot(pos_x, pos_y, "o")

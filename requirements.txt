@@ -9,3 +9,4 @@ matplotlib~=3.3.4
 nestargs~=0.4.3
 Cython~=0.29.22
 wandb~=0.10.24
+pytest
