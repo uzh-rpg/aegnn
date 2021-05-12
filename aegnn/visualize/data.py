@@ -68,7 +68,7 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
             w, h = bbox_i[3:5]
             corner_point = bbox_i[1:3]
             is_correct_class = bbox_i[5] == data.y  # only one graph, thus direct comparison
-            bbox_i_desc = f"{is_correct_class}({bbox_i[7]:.2f})"
+            bbox_i_desc = f"{bool(is_correct_class)}({bbox_i[7]:.2f})"
             ax = draw_bounding_box(corner_point, w, h, color="green", text=bbox_i_desc, ax=ax)
 
     if return_histogram:

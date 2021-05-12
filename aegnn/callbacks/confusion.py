@@ -38,7 +38,8 @@ class ConfusionMatrix(pl.callbacks.base.Callback):
             i, j = np.unravel_index(idx, cm.shape)
             data.append([self.classes[i], self.classes[j], cm[i, j]])
         table = wandb.Table(data=data, columns=["True ClassID", "Predicted ClassID", "Number of Samples"])
-        model.logger.experiment.log({"confusions": table}, step=trainer.global_step, commit=False)
+        if hasattr(model.logger.experiment, "log"):
+            model.logger.experiment.log({"confusions": table}, step=trainer.global_step, commit=False)
 
         # Reset logs for next validation round.
         self.__y_hat = np.array([])

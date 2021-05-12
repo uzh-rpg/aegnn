@@ -32,7 +32,7 @@ if __name__ == '__main__':
     if args.train.log_gradients:
         logger.watch(model, log="gradients")  # gradients plot every 100 training batches
 
-    model_dir = os.path.join(log_dir, "models", logger.experiment.name)
+    model_dir = os.path.join(log_dir, "models", logger.name)
     callbacks = [
         aegnn.callbacks.PHyperLogger(args),
         # aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
