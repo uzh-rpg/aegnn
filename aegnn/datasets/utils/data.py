@@ -50,7 +50,7 @@ def processing(rf: str, raw_dir: str, target_dir: str, object_class_ids: Dict[st
         # Add annotations, if they are defined for the given file.
         if annotations_dir:
             af = rf.replace(raw_dir, annotations_dir)
-            data_obj.bb = read_annotations(af, data_obj.y)
+            data_obj.bb = torch.tensor(read_annotations(af, data_obj.y))
 
         # Filter a random window of length `dt` from the sample. To do so, find the number of
         # windows with length `dt` in the data, sample one of them and filter the data accordingly.
