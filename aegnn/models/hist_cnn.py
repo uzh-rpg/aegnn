@@ -5,10 +5,10 @@ import torch_geometric
 from torch.nn import BatchNorm2d, Conv2d, Linear
 from typing import Tuple
 
-from .base import MultiClassificationModel
+from .base import RecognitionModel
 
 
-class HistCNN(MultiClassificationModel):
+class HistCNN(RecognitionModel):
     """Simple MNIST-CNN based on the event histogram"""
 
     def __init__(self, num_classes: int, img_shape: Tuple[int, int], **kwargs):

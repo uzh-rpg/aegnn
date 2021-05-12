@@ -7,11 +7,11 @@ from torch_geometric.nn.conv import SplineConv
 from torch_geometric.nn.norm import BatchNorm
 from torch_geometric.nn.pool import max_pool_x, voxel_grid
 
-from .base import MultiClassificationModel
+from .base import RecognitionModel
 from .nvs import NVS
 
 
-class RNVS(MultiClassificationModel):
+class RNVS(RecognitionModel):
 
     def __init__(self, num_classes: int, **kwargs):
         super().__init__(learning_rate=0.001, num_classes=num_classes)

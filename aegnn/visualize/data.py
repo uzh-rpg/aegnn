@@ -1,20 +1,24 @@
 import logging
 import numpy as np
+import torch
 import torch_geometric
 import tqdm
 
 from matplotlib import pyplot as plt
-import matplotlib.patches as patches
+
+from .utils.bounding_box import draw_bounding_box
 
 
 def event_histogram(data: torch_geometric.data.Data, img_width: float = None, img_height: float = None,
-                    max_count: int = 1, ax: plt.Axes = None, return_histogram: bool = False):
+                    max_count: int = 1, bbox: torch.Tensor = None, ax: plt.Axes = None, return_histogram: bool = False):
     """Plot event histogram by stacking all events with the same pixel coordinates over all times.
 
     :param data: sample graph object (pos, class_id).
     :param img_width: image width in pixel (default = None => inferred from max-x-coordinate).
     :param img_height: image height in pixel (default = None => inferred from max-y-coordinate).
     :param max_count: maximum count per bin to reject outliers (default = 100, -1 => no outlier rejection).
+    :param bbox: bounding boxes to draw additional to data-contained annotation
+                 (batch_i, (upper left corner -> u, v), width, height, class_idx, class_conf, prediction_conf)
     :param ax: matplotlib axes to draw in.
     :param return_histogram: return the 2d histogram next to the axes.
     """
@@ -47,17 +51,25 @@ def event_histogram(data: torch_geometric.data.Data, img_width: float = None, im
     ax.set_axis_off()
 
     # If annotations are defined, add the to the plot as a bounding box.
-    bounding_boxes = getattr(data, "bb", None)
-    if bounding_boxes is not None:
-        assert len(bounding_boxes.shape) == 2  # (num_bbs, corner points)
-        bb_font_dict = dict(multialignment="left", color="black", backgroundcolor="red")
-        for bounding_box in bounding_boxes:
-            corner_point = (bounding_box[0], bounding_box[1])
-            h = bounding_box[2] - bounding_box[0]
-            w = bounding_box[5] - bounding_box[1]
-            rect = patches.Rectangle(corner_point, w, h, linewidth=1, edgecolor='r', facecolor='none')
-            ax.text(*corner_point, s=class_id, fontdict=bb_font_dict)
-            ax.add_patch(rect)
+    bbox_gt = getattr(data, "bb", None)
+    if bbox_gt is not None:
+        assert len(bbox_gt.shape) == 2  # (num_bbs, corner points)
+        for bounding_box in bbox_gt:
+            w, h = bounding_box[2:4]
+            corner_point = (bounding_box[1], bounding_box[0])
+            ax = draw_bounding_box(corner_point, w, h, color="red", text=class_id, ax=ax)
+
+    # If bounding boxes are passed to the function, draw them additional to the annotation
+    # bounding boxes. Use the prediction confidence as score.
+    if bbox is not None:
+        assert len(bbox.size()) == 2
+        for bbox_i in bbox:
+            assert bbox_i.numel() == 8
+            w, h = bbox_i[3:5]
+            corner_point = bbox_i[1:3]
+            is_correct_class = bbox_i[5] == data.y  # only one graph, thus direct comparison
+            bbox_i_desc = f"{is_correct_class}({bbox_i[7]:.2f})"
+            ax = draw_bounding_box(corner_point, w, h, color="green", text=bbox_i_desc, ax=ax)
 
     if return_histogram:
         return ax, histogram
@@ -77,10 +89,10 @@ def graph(data: torch_geometric.data.Data, ax: plt.Axes = None):
 
     pos_x = data.pos[:, 0]
     pos_y = data.pos[:, 1]
-    ax.plot(pos_x, pos_y, "o")
 
     edge_index = getattr(data, "edge_index")
     if edge_index is not None:
         for edge in tqdm.tqdm(edge_index.T):
             pos_edge = data.pos[[edge[0], edge[1]], :]
-            ax.plot(pos_edge[:, 0], pos_edge[:, 1], "-")
+            ax.plot(pos_edge[:, 0], pos_edge[:, 1], "k-", linewidth=0.1)
+    ax.plot(pos_x, pos_y, "o")

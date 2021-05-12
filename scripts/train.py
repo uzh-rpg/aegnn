@@ -26,6 +26,8 @@ if __name__ == '__main__':
 
     dm = aegnn.datasets.from_args(args)
     model = aegnn.models.by_name(args.model, num_classes=dm.num_classes, img_shape=dm.img_shape)
+    if isinstance(model, aegnn.models.base.DetectionModel):
+        project_name += "-detection"
     logger = pl.loggers.WandbLogger(project=project_name, save_dir=log_dir, settings=log_settings, sync_step=True)
     if args.train.log_gradients:
         logger.watch(model, log="gradients")  # gradients plot every 100 training batches
@@ -33,18 +35,18 @@ if __name__ == '__main__':
     model_dir = os.path.join(log_dir, "models", logger.experiment.name)
     callbacks = [
         aegnn.callbacks.PHyperLogger(args),
-        aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
+        # aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
         aegnn.callbacks.DatasetLogger(),
         aegnn.callbacks.FileLogger(objects=[model, dm.pre_filter, dm.pre_transform, *dm.transforms]),
-        pl.callbacks.EarlyStopping(monitor="Val/Accuracy", mode="max", min_delta=0.02, patience=20),
+        # pl.callbacks.EarlyStopping(monitor="Val/Accuracy", mode="max", min_delta=0.02, patience=20),
         pl.callbacks.LearningRateMonitor(),
         # pl.callbacks.ModelCheckpoint(dirpath=model_dir, save_top_k=1, monitor="Val/Loss", mode="min")
     ]
 
     trainer_kwargs = dict()
-    trainer_kwargs["gpus"] = [args.gpu] if args.gpu else None
+    trainer_kwargs["gpus"] = [args.gpu] if args.gpu is not None else None
     trainer_kwargs["profiler"] = args.profile
-    trainer_kwargs["precision"] = 16 if args.gpu else 32
+    trainer_kwargs["precision"] = 16 if args.gpu is not None else 32
     trainer_kwargs["max_epochs"] = args.train.max_epochs
     trainer_kwargs["overfit_batches"] = args.train.overfit_batches
     trainer_kwargs["weights_summary"] = "full"
