@@ -91,7 +91,7 @@ class DetectionModel(pl.LightningModule):
         gt_cell_corner_offset_x[gt_cell_corner_offset_x < 0] = 0
         gt_cell_corner_offset_x, gt_cell_x = torch.min(gt_cell_corner_offset_x, dim=-1)
 
-        gt_cell_corner_offset_y = gt_bbox_center[:, :, 1, None] - cell_corners[None, None, 0, :, 0]
+        gt_cell_corner_offset_y = gt_bbox_center[:, :, 1, None] - cell_corners[None, None, :, 0, 0]
         gt_cell_corner_offset_y[gt_cell_corner_offset_y < 0] = 0
         gt_cell_corner_offset_y, gt_cell_y = torch.min(gt_cell_corner_offset_y, dim=-1)
 
@@ -122,8 +122,13 @@ class DetectionModel(pl.LightningModule):
 
             training_bbs = self.add_pascalvoc_bounding_boxes(BoundingBoxes(), gt_bb, detected_bbox=detected_bb,
                                                              image_id=getattr(batch, "file_id"))
+            for bb in training_bbs.getBoundingBoxes():
+                print(bb.getClassId(), bb.getAbsoluteBoundingBox(), bb.getBBType(), bb.getConfidence(),
+                      bb.getBBType() == BBType.GroundTruth, bb.getBBType() is BBType.GroundTruth)
             map_method = MethodAveragePrecision.EveryPointInterpolation
             metrics = self.evaluator.GetPascalVOCMetrics(training_bbs, IOUThreshold=0.5, method=map_method)
+            for m in metrics:
+                print(m)
             metrics_logs[f"{prefix}mAP"] = sum([m["AP"] for m in metrics]) / self.num_classes
 
         return metrics_logs
@@ -143,16 +148,17 @@ class DetectionModel(pl.LightningModule):
                 if gt_bbox[i_batch, i_gt, :].sum() == 0:
                     break
 
-                bb_gt = BoundingBox(image_id[i_batch], gt_bbox_sample[-1], gt_bbox_sample[0], gt_bbox_sample[1],
-                                    gt_bbox_sample[2], gt_bbox_sample[3], image_size, BBType.GroundTruth)
+                bb_gt = BoundingBox(image_id[i_batch], gt_bbox_sample[-1], gt_bbox_sample[1], gt_bbox_sample[0],
+                                    gt_bbox_sample[2], gt_bbox_sample[3], image_size, bbType=BBType.GroundTruth,
+                                    classConfidence=1.0)
                 bounding_boxes.addBoundingBox(bb_gt)
 
         for i_det in range(detected_bbox.shape[0]):
             det_bbox_sample = detected_bbox[i_det, :]
             i_batch = int(det_bbox_sample[0])
             bb_det = BoundingBox(image_id[i_batch], det_bbox_sample[5], det_bbox_sample[1], det_bbox_sample[2],
-                                 det_bbox_sample[3], det_bbox_sample[4], image_size, BBType.Detected,
-                                 det_bbox_sample[6])
+                                 det_bbox_sample[3], det_bbox_sample[4], image_size, bbType=BBType.Detected,
+                                 classConfidence=det_bbox_sample[6])
             bounding_boxes.addBoundingBox(bb_det)
 
         return bounding_boxes
