@@ -34,6 +34,7 @@ if __name__ == '__main__':
 
     model_dir = os.path.join(log_dir, "models", logger.name)
     callbacks = [
+        aegnn.callbacks.BBoxLogger(),
         aegnn.callbacks.PHyperLogger(args),
         # aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
         aegnn.callbacks.DatasetLogger(),
