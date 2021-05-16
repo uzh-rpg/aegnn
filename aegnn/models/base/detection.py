@@ -38,7 +38,7 @@ class DetectionModel(pl.LightningModule):
         outputs = self.forward(data=batch)
 
         # Compute loss, as weighted sum of multiple loss functions.
-        gt_bb = torch.tensor(getattr(batch, "bb"), device=self.device)
+        gt_bb = getattr(batch, "bbox").to(self.device)
         loss, losses_dict, iou = self.loss(outputs, bounding_box=gt_bb)
         loss_logs = {f"Train/Loss-{name.capitalize()}": value for name, value in losses_dict.items()}
 
@@ -51,7 +51,7 @@ class DetectionModel(pl.LightningModule):
 
     def validation_step(self, batch: torch_geometric.data.Batch, batch_idx: int) -> torch.Tensor:
         outputs = self.forward(data=batch)
-        gt_bb = torch.tensor(getattr(batch, "bb"), device=self.device)
+        gt_bb = getattr(batch, "bbox").to(self.device)
 
         loss, _, iou = self.loss(outputs, bounding_box=gt_bb)
         metrics_logs = self.evaluate(outputs, batch=batch, prefix="Val/")
@@ -115,20 +115,15 @@ class DetectionModel(pl.LightningModule):
         metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(detected_bb[:, 5].long(), target=batch.y[dbb_batch_idx])
 
         with torch.no_grad():
-            gt_bb = torch.tensor(getattr(batch, "bb"), device=self.device)
+            gt_bb = torch.tensor(getattr(batch, "bbox"), device=self.device)
             detected_bb = self.detect(model_outputs, threshold=0.3)
             detected_bb = model_utils.non_max_suppression(detected_bb, iou=0.6)
             detected_bb = detected_bb.detach().cpu().numpy()
 
             training_bbs = self.add_pascalvoc_bounding_boxes(BoundingBoxes(), gt_bb, detected_bbox=detected_bb,
                                                              image_id=getattr(batch, "file_id"))
-            for bb in training_bbs.getBoundingBoxes():
-                print(bb.getClassId(), bb.getAbsoluteBoundingBox(), bb.getBBType(), bb.getConfidence(),
-                      bb.getBBType() == BBType.GroundTruth, bb.getBBType() is BBType.GroundTruth)
             map_method = MethodAveragePrecision.EveryPointInterpolation
             metrics = self.evaluator.GetPascalVOCMetrics(training_bbs, IOUThreshold=0.5, method=map_method)
-            for m in metrics:
-                print(m)
             metrics_logs[f"{prefix}mAP"] = sum([m["AP"] for m in metrics]) / self.num_classes
 
         return metrics_logs

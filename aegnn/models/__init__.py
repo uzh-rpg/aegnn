@@ -21,3 +21,12 @@ def by_name(name: str, **kwargs) -> typing.Union[pl.LightningModule, None]:
     from aegnn.utils.io import select_by_name
     choices = [NVS, NVSD, RNVS]
     return select_by_name(choices, name=name, **kwargs)
+
+
+def get_type(model: typing.Union[pl.LightningModule, None]) -> str:
+    if isinstance(model, aegnn.models.base.DetectionModel):
+        return "detection"
+    elif isinstance(model, aegnn.models.base.RecognitionModel):
+        return "recognition"
+    return ""
+

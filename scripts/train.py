@@ -15,26 +15,23 @@ if __name__ == '__main__':
     parser = arguments.add_dataset_arguments(parser)
     parser = arguments.add_trainer_arguments(parser)
     args = parser.parse_args()
+
     torch_geometric.set_debug(args.debug)
     pl.seed_everything(args.seed)
-
     arguments.check_arguments(args)
 
-    project_name = f"aegnn-{args.dataset}"
     log_settings = wandb.Settings(start_method="thread")
     log_dir = os.environ["AEGNN_LOG_DIR"]
 
     dm = aegnn.datasets.from_args(args)
     model = aegnn.models.by_name(args.model, num_classes=dm.num_classes, img_shape=dm.img_shape)
-    if isinstance(model, aegnn.models.base.DetectionModel):
-        project_name += "-detection"
+    project_name = f"aegnn-{args.dataset}-{aegnn.models.get_type(model)}"
     logger = pl.loggers.WandbLogger(project=project_name, save_dir=log_dir, settings=log_settings, sync_step=True)
     if args.train.log_gradients:
         logger.watch(model, log="gradients")  # gradients plot every 100 training batches
 
-    model_dir = os.path.join(log_dir, "models", logger.name)
     callbacks = [
-        aegnn.callbacks.BBoxLogger(),
+        aegnn.callbacks.BBoxLogger(classes=dm.classes),
         aegnn.callbacks.PHyperLogger(args),
         # aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
         aegnn.callbacks.DatasetLogger(),

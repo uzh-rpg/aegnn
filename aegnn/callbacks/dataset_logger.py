@@ -1,4 +1,6 @@
 import collections
+import logging
+
 import numpy as np
 import pytorch_lightning as pl
 
@@ -8,7 +10,7 @@ from tqdm import tqdm
 class DatasetLogger(pl.callbacks.base.Callback):
 
     def on_train_start(self, trainer: pl.Trainer, model: pl.LightningModule):
-        print("Logging dataset information")
+        logging.info("Logging dataset information")
         log_info = collections.defaultdict(list)
 
         # Determine the samples taken from each dataset. Depending on the size of the dataset,

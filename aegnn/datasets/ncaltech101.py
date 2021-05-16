@@ -1,4 +1,5 @@
 import functools
+import logging
 import glob
 import numpy as np
 import os
@@ -37,18 +38,18 @@ class NCaltech101(EventDataset):
         def process(self):
             annotations_dir = os.path.join(os.environ["AEGNN_DATA_DIR"], "ncaltech101", "annotations")
 
-            print("Building class dictionary")
+            logging.info("Building class dictionary")
             raw_files = self.raw_paths
             object_class_ids = utils.data.build_class_dict(raw_files, self.classes, read_class_id=self.read_class_id)
 
             # Processing the raw files in parallel processes. Importantly, the functions must therefore be able to be
             # pickled, i.e. not using dynamic types or not-shared class variables.
             if self.num_workers > 1:
-                print(f"Processing raw files with {self.num_workers} workers")
+                logging.info(f"Processing raw files with {self.num_workers} workers")
                 task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(raw_files))
                 process, args = task_manager.queue, [utils.data.processing]
             else:
-                print("Processing raw files with a single process")
+                logging.info("Processing raw files with a single process")
                 process, args = utils.data.processing, []
 
             # Processing raw files either in parallel or sequentially (debug).
@@ -72,7 +73,7 @@ class NCaltech101(EventDataset):
                 annotations[2] - annotations[0],  # width
                 annotations[5] - annotations[1],  # height
                 label
-            ]).reshape(1, -1)
+            ]).reshape((1, 1, -1))
 
         @staticmethod
         def read_class_id(raw_file: str) -> str:

@@ -7,7 +7,8 @@ import aegnn.models
 try:
     import aegnn.visualize
 except ModuleNotFoundError:
-    print("AEGNN Module imported without visualization tools")
+    import logging
+    logging.warning("AEGNN Module imported without visualization tools")
 
 
 # Setup default values for environment variables, if they have not been defined already.

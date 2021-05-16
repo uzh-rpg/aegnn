@@ -10,11 +10,9 @@ def test_intersection():
 
     # Compute the intersection indices in the implemented way.
     idx = intersection(x, y).numpy().tolist()
-    print(idx)
 
     # Compute the intersection using python sets (inefficient, but accurate).
     x_set = x.numpy()
     y_set = y.numpy()
     idx2 = list(set(x_set) & set(y_set))
-    print(idx2)
     assert sorted(idx) == sorted(idx2)

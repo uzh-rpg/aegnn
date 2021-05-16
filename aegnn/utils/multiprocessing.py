@@ -1,4 +1,5 @@
 # from https://stackoverflow.com/questions/9601802/python-pool-apply-async-and-map-async-do-not-block-on-full-queue?rq=1
+import logging
 import multiprocessing
 import torch
 import torch.multiprocessing
@@ -44,7 +45,7 @@ class TaskManager(object):
         """Start a new task, blocks if queue is full."""
         self.__workers.acquire()
         res = self.__pool.apply_async(function, args, kwargs, callback=self.__task_done,
-                                      error_callback=self.__release_and_print)
+                                      error_callback=self.__release_and_log)
         self.outputs += [(self.index, res)]
         self.index += 1
 
@@ -55,6 +56,6 @@ class TaskManager(object):
             self.__callback(*args, **kwargs)
         self.__progress_bar.update(1)
 
-    def __release_and_print(self, e):
+    def __release_and_log(self, e):
         self.__workers.release()
-        print(e)
+        logging.error(e)

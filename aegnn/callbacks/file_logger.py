@@ -26,9 +26,6 @@ class FileLogger(pl.callbacks.base.Callback):
         for obj in sum(objects_flat_a + objects_flat_b, []):
             self.__log_object_file(obj, logger=model.logger)
 
-    ###############################################################################################
-    # Utilities ###################################################################################
-    ###############################################################################################
     @staticmethod
     def __log_object_file(obj, logger):
         if obj is not None and hasattr(logger.experiment, "save"):

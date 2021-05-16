@@ -1,6 +1,7 @@
 """
 Code was adapted from https://github.com/rafaelpadilla/Object-Detection-Metrics
 """
+import logging
 import os
 import sys
 from collections import Counter
@@ -251,7 +252,6 @@ class VOC_Evaluator:
             if bb.getClassId() not in classes:
                 classes.append(bb.getClassId())
         classes = sorted(classes)
-        print(groundTruths)
         # Precision x Recall is obtained individually by each class
         # Loop through by classes
         for c in classes:
@@ -270,22 +270,21 @@ class VOC_Evaluator:
             det = Counter([cc[0] for cc in gts])
             for key, val in det.items():
                 det[key] = np.zeros(val)
-            # print("Evaluating class: %s (%d detections)" % (str(c), len(dects)))
+            logging.debug("Evaluating class: %s (%d detections)" % (str(c), len(dects)))
             # Loop through detections
             for d in range(len(dects)):
-                print('dect %s => %s' % (dects[d][0], dects[d][3],))
+                logging.debug('dect %s => %s' % (dects[d][0], dects[d][3],))
                 # Find ground truth image
                 gt = [gt for gt in gts if gt[0] == dects[d][0]]
                 iouMax = sys.float_info.min
                 for j in range(len(gt)):
-                    print('Ground truth gt => %s' % (gt[j][3],))
+                    logging.debug('Ground truth gt => %s' % (gt[j][3],))
                     iou = VOC_Evaluator.iou(dects[d][3], gt[j][3])
                     if iou > iouMax:
                         iouMax = iou
                         jmax = j
                 # Assign detection as true positive/don't care/false positive
                 if iouMax >= IOUThreshold:
-                    print(det)
                     if det[dects[d][0]][jmax] == 0:
                         TP[d] = 1  # count as true positive
                         det[dects[d][0]][jmax] = 1  # flag as already 'seen'
@@ -297,8 +296,7 @@ class VOC_Evaluator:
             # compute precision, recall and average precision
             acc_FP = np.cumsum(FP)
             acc_TP = np.cumsum(TP)
-            rec = acc_TP / npos
-            print(TP, acc_TP, npos)
+            rec = acc_TP / npos if npos > 0 else 0
             prec = np.divide(acc_TP, (acc_FP + acc_TP))
             # Depending on the method, call the right implementation
             if method == MethodAveragePrecision.EveryPointInterpolation:

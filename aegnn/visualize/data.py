@@ -23,24 +23,28 @@ def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] 
     :param return_histogram: return the 2d histogram next to the axes.
     """
     class_id = getattr(data, "class_id", "unknown")
-    hist = compute_histogram(data.pos[:, :2].numpy(), img_shape=img_shape)
-    ax = image(hist, class_id=class_id, bbox=bbox, bbox_gt=getattr(data, "bb", None), max_count=max_count, ax=ax)
+    hist = compute_histogram(data.pos[:, :2].numpy(), img_shape=img_shape, max_count=max_count)
+    ax = image(hist, title=class_id, bbox=bbox, bbox_gt=getattr(data, "bbox", None), ax=ax)
     if return_histogram:
         return ax, hist
     return ax
 
 
-def image(histogram: Union[torch.Tensor, np.ndarray], class_id: str = "unknown", bbox: torch.Tensor = None,
-          bbox_gt: torch.Tensor = None, max_count: int = 1, ax: plt.Axes = None) -> plt.Axes:
-    """Plot """
+def image(img: Union[torch.Tensor, np.ndarray], title: str = "unknown", bbox: torch.Tensor = None,
+          bbox_gt: torch.Tensor = None, ax: plt.Axes = None) -> plt.Axes:
+    """Plot image and ground-truth as well as prediction bounding box (if provided).
+
+    :param img: image to draw.
+    :param title: image title, usually a class id (default: unknown).
+    :param bbox: prediction bounding boxes (num_bbs, 5), default = None.
+    :param bbox_gt: ground-truth bounding box (num_gt_bbs, 5), default = None.
+    :param ax: matplotlib axes to draw in.
+    """
     if not ax:
         _, ax = plt.subplots(1, 1)
 
-    if max_count > 0:
-        histogram[histogram > max_count] = max_count
-
-    ax.imshow(histogram)
-    ax.set_title(f"{class_id}")
+    ax.imshow(img)
+    ax.set_title(f"{title}")
     ax.set_axis_off()
 
     # If annotations are defined, add the to the plot as a bounding box.
@@ -49,7 +53,7 @@ def image(histogram: Union[torch.Tensor, np.ndarray], class_id: str = "unknown",
         for bounding_box in bbox_gt:
             w, h = bounding_box[2:4]
             corner_point = (bounding_box[1], bounding_box[0])
-            ax = draw_bounding_box(corner_point, w, h, color="red", text=class_id, ax=ax)
+            ax = draw_bounding_box(corner_point, w, h, color="red", text=title, ax=ax)
 
     # If bounding boxes are passed to the function, draw them additional to the annotation
     # bounding boxes. Use the prediction confidence as score.
