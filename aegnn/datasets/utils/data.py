@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import random
 import torch
 import torch_geometric
 
@@ -105,7 +104,8 @@ def __get_t_section(data_obj: torch_geometric.data.Data, wdt: float) -> torch_ge
     t_max = data_obj.pos[:, 2].max()
     data = data_obj.clone()
 
-    t_start = t_min + random.random() * (t_max - t_min - wdt)
+    # t_start = min(t_min + wdt, t_max - wdt) + random.random() * (t_max - t_min - wdt)
+    t_start = t_min + (t_max - wdt - t_min) / 2
     t_end = t_start + wdt
     idx_select = torch.logical_and(t_start <= data.pos[:, 2], data.pos[:, 2] < t_end)
     data.x = data.x[idx_select, :]
