@@ -177,7 +177,7 @@ class DetectionModel(pl.LightningModule):
         bbox_top_left_corner = cell_top_left[None, :, :, None, :] + torch.stack([x_rel, y_rel], dim=-1)
 
         if threshold is None:
-            return torch.cat([bbox_top_left_corner, h.unsqueeze(-1), w.unsqueeze(-1), pred_conf.unsqueeze(-1)], dim=-1)
+            return torch.cat([bbox_top_left_corner, w.unsqueeze(-1), h.unsqueeze(-1), pred_conf.unsqueeze(-1)], dim=-1)
 
         detected_bbox_idx = torch.gt(pred_conf, threshold).nonzero().split(1, dim=-1)
         batch_idx = detected_bbox_idx[0]
@@ -194,8 +194,8 @@ class DetectionModel(pl.LightningModule):
         pred_cls_conf = pred_cls_conf[torch.arange(pred_cls.shape[0]), pred_cls.squeeze(-1)]
 
         # Convert from x, y to u, v
-        det_bbox = torch.cat([batch_idx.float(), detected_top_left_corner[:, 1, None].float(),
-                             detected_top_left_corner[:, 0, None].float(), detected_w.float(), detected_h.float(),
+        det_bbox = torch.cat([batch_idx.float(), detected_top_left_corner[:, 0, None].float(),
+                             detected_top_left_corner[:, 1, None].float(), detected_w.float(), detected_h.float(),
                              pred_cls.float(), pred_cls_conf[:, None].float(), pred_conf], dim=-1)
 
         return model_utils.crop_to_frame(det_bbox, input_shape)

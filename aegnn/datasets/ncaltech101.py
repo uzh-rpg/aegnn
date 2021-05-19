@@ -69,9 +69,9 @@ class NCaltech101(EventDataset):
             f.close()
 
             return np.array([
-                annotations[0], annotations[1],  # upper-left corner
-                annotations[2] - annotations[0],  # width
-                annotations[5] - annotations[1],  # height
+                annotations[1], annotations[0],  # upper-left corner
+                annotations[5] - annotations[1],  # width
+                annotations[2] - annotations[0],  # height
                 label
             ]).reshape((1, 1, -1))
 

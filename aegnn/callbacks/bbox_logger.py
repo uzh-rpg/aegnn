@@ -62,10 +62,10 @@ class BBoxLogger(pl.callbacks.base.Callback):
             "predictions": {
                 "box_data": [{
                     "position": {
-                        "minY": bbox[0] + padding,
-                        "maxY": bbox[0] + padding + bbox[2],
-                        "minX": bbox[1] + padding,
-                        "maxX": bbox[1] + padding + bbox[3]
+                        "minX": bbox[0] + padding,
+                        "maxX": bbox[0] + padding + bbox[2],
+                        "minY": bbox[1] + padding,
+                        "maxY": bbox[1] + padding + bbox[3]
                     },
                     "class_id": int(label),
                     "box_caption": p_class_id,
@@ -76,10 +76,10 @@ class BBoxLogger(pl.callbacks.base.Callback):
             "ground_truth": {
                 "box_data": [{
                     "position": {
-                        "minY": t_bbox[0] + padding,
-                        "maxY": t_bbox[0] + padding + t_bbox[2],
-                        "minX": t_bbox[1] + padding,
-                        "maxX": t_bbox[1] + padding + t_bbox[3]
+                        "minX": t_bbox[0] + padding,
+                        "maxX": t_bbox[0] + padding + t_bbox[2],
+                        "minY": t_bbox[1] + padding,
+                        "maxY": t_bbox[1] + padding + t_bbox[3],
                     },
                     "class_id": int(t_label),
                     "box_caption": t_class_id,

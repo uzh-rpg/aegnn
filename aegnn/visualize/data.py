@@ -52,7 +52,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = "unknown", bbox: to
         assert len(bbox_gt.shape) == 2  # (num_bbs, corner points)
         for bounding_box in bbox_gt:
             w, h = bounding_box[2:4]
-            corner_point = (bounding_box[1], bounding_box[0])
+            corner_point = (bounding_box[0], bounding_box[1])
             ax = draw_bounding_box(corner_point, w, h, color="red", text=title, ax=ax)
 
     # If bounding boxes are passed to the function, draw them additional to the annotation
@@ -63,7 +63,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = "unknown", bbox: to
             assert bbox_i.numel() == 8
             w, h = bbox_i[3:5]
             corner_point = bbox_i[1:3]
-            is_correct_class = bbox_i[5] == bbox_gt[-1]  # only one graph, thus direct comparison
+            is_correct_class = bbox_i[5] == bbox_gt[0, -1]  # only one graph, thus direct comparison
             bbox_i_desc = f"{bool(is_correct_class)}({bbox_i[6]:.2f})"
             ax = draw_bounding_box(corner_point, w, h, color="green", text=bbox_i_desc, ax=ax)
 
