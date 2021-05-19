@@ -8,14 +8,16 @@ from matplotlib import pyplot as plt
 
 from .utils.bounding_box import draw_bounding_box
 from .utils.histogram import compute_histogram
+from .utils.title import choose_title
 
 
-def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] = None,
+def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] = None, title: str = None,
                     max_count: int = 1, bbox: torch.Tensor = None, ax: plt.Axes = None, return_histogram: bool = False):
     """Plot event histogram by stacking all events with the same pixel coordinates over all times.
 
     :param data: sample graph object (pos, class_id).
     :param img_shape: image shape in pixel (default = None => inferred from max-xy-coordinate).
+    :param title: image title, default = image class.
     :param max_count: maximum count per bin to reject outliers (default = 100, -1 => no outlier rejection).
     :param bbox: bounding boxes to draw additional to data-contained annotation
                  (batch_i, (upper left corner -> u, v), width, height, class_idx, class_conf, prediction_conf)
@@ -23,28 +25,33 @@ def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] 
     :param return_histogram: return the 2d histogram next to the axes.
     """
     class_id = getattr(data, "class_id", "unknown")
+    title = choose_title(title, class_id)
     hist = compute_histogram(data.pos[:, :2].numpy(), img_shape=img_shape, max_count=max_count)
-    ax = image(hist, title=class_id, bbox=bbox, bbox_gt=getattr(data, "bbox", None), ax=ax)
+    ax = image(hist, title=str(title), bbox=bbox, bbox_gt=getattr(data, "bbox", None), class_id=class_id, ax=ax)
     if return_histogram:
         return ax, hist
     return ax
 
 
-def image(img: Union[torch.Tensor, np.ndarray], title: str = "unknown", bbox: torch.Tensor = None,
-          bbox_gt: torch.Tensor = None, ax: plt.Axes = None) -> plt.Axes:
+def image(img: Union[torch.Tensor, np.ndarray], title: str = None, class_id: str = None, bbox: torch.Tensor = None,
+          bbox_gt: torch.Tensor = None, padding: int = 50, ax: plt.Axes = None) -> plt.Axes:
     """Plot image and ground-truth as well as prediction bounding box (if provided).
 
     :param img: image to draw.
     :param title: image title, usually a class id (default: unknown).
+    :param class_id: object class id for ground-truth description.
     :param bbox: prediction bounding boxes (num_bbs, 5), default = None.
     :param bbox_gt: ground-truth bounding box (num_gt_bbs, 5), default = None.
+    :param padding: zero padding around image (default = 50).
     :param ax: matplotlib axes to draw in.
     """
     if not ax:
         _, ax = plt.subplots(1, 1)
 
+    img = np.pad(img, pad_width=padding)
     ax.imshow(img)
-    ax.set_title(f"{title}")
+    if title is not None:
+        ax.set_title(f"{title}")
     ax.set_axis_off()
 
     # If annotations are defined, add the to the plot as a bounding box.
@@ -53,7 +60,8 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = "unknown", bbox: to
         for bounding_box in bbox_gt:
             w, h = bounding_box[2:4]
             corner_point = (bounding_box[0], bounding_box[1])
-            ax = draw_bounding_box(corner_point, w, h, color="red", text=title, ax=ax)
+            title = choose_title(class_id, None)
+            ax = draw_bounding_box(corner_point, w, h, color="red", text=title, padding=padding, ax=ax)
 
     # If bounding boxes are passed to the function, draw them additional to the annotation
     # bounding boxes. Use the prediction confidence as score.
@@ -63,9 +71,9 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = "unknown", bbox: to
             assert bbox_i.numel() == 8
             w, h = bbox_i[3:5]
             corner_point = bbox_i[1:3]
-            is_correct_class = bbox_i[5] == bbox_gt[0, -1]  # only one graph, thus direct comparison
-            bbox_i_desc = f"{bool(is_correct_class)}({bbox_i[6]:.2f})"
-            ax = draw_bounding_box(corner_point, w, h, color="green", text=bbox_i_desc, ax=ax)
+            # is_correct_class = bbox_i[5] == bbox_gt[0, -1]  # only one graph, thus direct comparison
+            # bbox_i_desc = f"{bool(is_correct_class)}({bbox_i[6]:.2f})"
+            ax = draw_bounding_box(corner_point, w, h, color="green", padding=padding, ax=ax)
 
     return ax
 
