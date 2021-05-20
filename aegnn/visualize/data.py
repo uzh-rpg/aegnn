@@ -26,7 +26,7 @@ def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] 
     """
     class_id = getattr(data, "class_id", "unknown")
     title = choose_title(title, class_id)
-    hist = compute_histogram(data.pos[:, :2].numpy(), img_shape=img_shape, max_count=max_count)
+    hist = compute_histogram(data.pos[:, :2].cpu().numpy(), img_shape=img_shape, max_count=max_count)
     ax = image(hist, title=str(title), bbox=bbox, bbox_gt=getattr(data, "bbox", None), class_id=class_id, ax=ax)
     if return_histogram:
         return ax, hist
@@ -49,7 +49,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = None, class_id: str
         _, ax = plt.subplots(1, 1)
 
     img = np.pad(img, pad_width=padding)
-    ax.imshow(img)
+    ax.imshow(img.T)
     if title is not None:
         ax.set_title(f"{title}")
     ax.set_axis_off()

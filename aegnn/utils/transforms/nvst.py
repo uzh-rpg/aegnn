@@ -1,6 +1,5 @@
 import math
 import numpy as np
-import random
 import torch
 import torch_geometric
 
@@ -24,12 +23,9 @@ class NVST(Transform):
 
     ["Graph-Based Object Classification for Neuromorphic VisionSensing" (Bi, 2019)]"""
 
-    def __init__(self, r: float = 3, d_max: int = 32, dt: float = 0.03, beta: float = 0.5e-5,
-                 n_max: int = 8, seed: int = 12345):
-        random.seed(seed)
+    def __init__(self, r: float = 3, d_max: int = 32, beta: float = 0.5e-5, n_max: int = 8):
         self.r = float(r)
         self.d_max = int(d_max)
-        self.dt = float(dt)  # 30 ms section
         self.beta = beta
         self.n_max = n_max
 
@@ -57,7 +53,7 @@ class NVST(Transform):
 
     def __repr__(self):
         name = self.__class__.__name__
-        return f"{name}[r={self.r}, d_max={self.d_max}, dt={self.dt}, beta={self.beta}, n_max={self.n_max}]"
+        return f"{name}[r={self.r}, d_max={self.d_max}, beta={self.beta}, n_max={self.n_max}]"
 
     #####################################################################################
     # Modules ###########################################################################

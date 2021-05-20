@@ -1,5 +1,4 @@
 import argparse
-import collections
 import glob
 import os
 import random
