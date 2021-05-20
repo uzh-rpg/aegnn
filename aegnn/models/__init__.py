@@ -9,6 +9,7 @@ from aegnn.models.rnvs import RNVS
 
 # Object detection models (YOLO).
 from aegnn.models.nvsd import NVSD
+from aegnn.models.baseline.cnld import CNLD
 
 ################################################################################################
 # Access functions #############################################################################
@@ -19,7 +20,7 @@ import typing
 
 def by_name(name: str, **kwargs) -> typing.Union[pl.LightningModule, None]:
     from aegnn.utils.io import select_by_name
-    choices = [NVS, NVSD, RNVS]
+    choices = [NVS, NVSD, CNLD, RNVS]
     return select_by_name(choices, name=name, **kwargs)
 
 
