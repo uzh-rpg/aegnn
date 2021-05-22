@@ -1,86 +1,57 @@
-import functools
-import logging
 import glob
 import numpy as np
 import os
 import torch
 import torch_geometric
 
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple
 
-import aegnn.datasets.utils as utils
-from aegnn.utils import TaskManager
 from .base.event_ds import EventDataset
+from .base.event_dm import EventDataModule
 
 
-class NCaltech101(EventDataset):
+class NCaltech101(EventDataModule):
 
-    class NCaltech101DS(torch_geometric.data.Dataset):
+    class NCaltech101DS(EventDataset):
 
         def __init__(self, root: str, transforms: Callable, pre_transform: Callable, pre_filter: Callable,
                      classes: List[str] = None, mode: str = "training", num_workers: int = 1):
-            root_mode = os.path.join(root, mode)
-            if not os.path.isdir(root_mode):
-                raise FileNotFoundError(f"Mode {mode} not found at root {root}!")
+            self.__label_to_class_id = {}
+            super().__init__(root, transforms, pre_transform, pre_filter, classes, mode, num_workers)
 
-            self.classes = classes or os.listdir(os.path.join(root_mode, "raw"))
-            self.num_workers = num_workers
-            transform = torch_geometric.transforms.Compose(transforms)
-            super().__init__(root=root_mode, transform=transform, pre_transform=pre_transform, pre_filter=pre_filter)
-
-        def get(self, idx: int) -> torch_geometric.data.Data:
-            data_file = str(os.path.join(self.processed_dir, self.processed_file_names[idx]))
-            return torch.load(data_file)
-
-        #########################################################################################################
-        # Processing ############################################################################################
-        #########################################################################################################
         def process(self):
+            """Required by `torch_geometric.data.Dataset` in order to start processing."""
+            super().process()
+
+        def read_annotations(self, raw_file: str) -> np.ndarray:
             annotations_dir = os.path.join(os.environ["AEGNN_DATA_DIR"], "ncaltech101", "annotations")
+            raw_file_rel = os.path.relpath(raw_file, start=self.raw_dir).replace("image", "annotation")
 
-            logging.info("Building class dictionary")
-            raw_files = self.raw_paths
-            object_class_ids = utils.data.build_class_dict(raw_files, self.classes, read_class_id=self.read_class_id)
-
-            # Processing the raw files in parallel processes. Importantly, the functions must therefore be able to be
-            # pickled, i.e. not using dynamic types or not-shared class variables.
-            if self.num_workers > 1:
-                logging.info(f"Processing raw files with {self.num_workers} workers")
-                task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(raw_files))
-                process, args = task_manager.queue, [utils.data.processing]
-            else:
-                logging.info("Processing raw files with a single process")
-                process, args = utils.data.processing, []
-
-            # Processing raw files either in parallel or sequentially (debug).
-            for rf in self.raw_paths:
-                process(*args, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir,
-                        load_func=self.load, object_class_ids=object_class_ids, wdt=0.03,
-                        pre_filter=self.pre_filter, pre_transform=self.pre_transform,
-                        annotations_dir=annotations_dir, read_annotations=self.read_annotations)
-
-        @staticmethod
-        def read_annotations(annotation_file: str, label: int) -> np.ndarray:
-            file_name = os.path.basename(annotation_file).replace("image", "annotation")
-
-            f = open(os.path.join(os.path.dirname(annotation_file), file_name))
+            f = open(os.path.join(os.path.join(annotations_dir, raw_file_rel)))
             annotations = np.fromfile(f, dtype=np.int16)
             annotations = np.array(annotations[2:10])
             f.close()
 
+            class_id = self.read_class_id(raw_file)
             return np.array([
                 annotations[1], annotations[0],  # upper-left corner
                 annotations[5] - annotations[1],  # width
                 annotations[2] - annotations[0],  # height
-                label
+                class_id
             ]).reshape((1, 1, -1))
 
-        @staticmethod
-        def read_class_id(raw_file: str) -> str:
-            return raw_file.split("/")[-2]
+        def read_class_id(self, raw_file: str) -> str:
+            label = self.read_label(raw_file)
+            return self.__label_to_class_id[label]
 
-        @staticmethod
-        def load(raw_file: str) -> torch_geometric.data.Data:
+        def read_label(self, raw_file: str) -> str:
+            label = raw_file.split("/")[-2]
+            if label not in self.__label_to_class_id.keys():
+                num_entries = len(self.__label_to_class_id)
+                self.__label_to_class_id[label] = num_entries
+            return label
+
+        def load(self, raw_file: str) -> torch_geometric.data.Data:
             f = open(raw_file, 'rb')
             raw_data = np.fromfile(f, dtype=np.uint8)
             f.close()
@@ -102,38 +73,29 @@ class NCaltech101(EventDataset):
             data_obj = torch_geometric.data.Data(x=x, pos=pos, class_id=obj_class, file_id=file_id)
             return data_obj
 
-        #########################################################################################################
-        # Files #################################################################################################
-        #########################################################################################################
-        @functools.cached_property
-        def raw_file_names(self):
-            files = glob.glob(os.path.join(self.raw_dir, "*", "*.bin"), recursive=True)
-            return [os.path.relpath(f, start=self.raw_dir) for f in files]
+        def get_sections(self, data_obj: torch_geometric.data.Data, wdt: float = 0.03
+                         ) -> List[torch_geometric.data.Data]:
+            t_min = data_obj.pos[:, 2].min()
+            t_max = data_obj.pos[:, 2].max()
+            data = data_obj.clone()
 
-        @functools.cached_property
-        def processed_file_names(self):
-            files = glob.glob(os.path.join(self.processed_dir, "*", "*.pt"), recursive=True)
-            if len(files) == 0:
-                return ["unknown"]
-            return [os.path.relpath(f, start=self.processed_dir) for f in files]
+            # t_start = min(t_min + wdt, t_max - wdt) + random.random() * (t_max - t_min - wdt)
+            t_start = t_min + (t_max - wdt - t_min) / 2
+            t_end = t_start + wdt
+            idx_select = torch.logical_and(t_start <= data.pos[:, 2], data.pos[:, 2] < t_end)
+            data.x = data.x[idx_select, :]
+            data.pos = data.pos[idx_select, :]
+            return [data]
 
-        def download(self):
-            pass
-
-        def len(self) -> int:
-            return len(self.processed_file_names)
+        @property
+        def raw_files(self):
+            return glob.glob(os.path.join(self.raw_dir, "*", "*.bin"), recursive=True)
 
     #########################################################################################################
     # Data Module ###########################################################################################
     #########################################################################################################
     def __init__(self, **kwargs):
         super().__init__(dataset_class=self.NCaltech101DS, **kwargs)
-
-    def setup(self, stage: Optional[str] = None):
-        pass
-
-    def prepare_data(self, *args, **kwargs):
-        pass
 
     @property
     def img_shape(self) -> Tuple[int, int]:

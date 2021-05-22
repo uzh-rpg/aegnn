@@ -2,7 +2,7 @@ import torch
 from typing import Any
 
 
-def choose_title(title: Any, default: Any) -> str:
+def make_title(title: Any, default: Any) -> str:
     def readable_string(x: Any) -> str:
         if type(x) == str:
             return x

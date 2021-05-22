@@ -1,4 +1,4 @@
-from aegnn.utils.filters.class_id import ClassID
+from aegnn.utils.filters.class_id import Label
 
 ################################################################################################
 # Access functions #############################################################################
@@ -9,7 +9,7 @@ from .base import Filter
 
 def by_name(name: str, **kwargs) -> typing.Union[Filter, None]:
     from ..io import select_by_name
-    choices = [ClassID]
+    choices = [Label]
     return select_by_name(choices, name=name, **kwargs)
 
 
