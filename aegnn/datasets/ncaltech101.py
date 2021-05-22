@@ -4,7 +4,7 @@ import os
 import torch
 import torch_geometric
 
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Union
 
 from .base.event_ds import EventDataset
 from .base.event_dm import EventDataModule
@@ -40,11 +40,11 @@ class NCaltech101(EventDataModule):
                 class_id
             ]).reshape((1, 1, -1))
 
-        def read_class_id(self, raw_file: str) -> str:
+        def read_class_id(self, raw_file: str) -> Union[int, List[int], None]:
             label = self.read_label(raw_file)
             return self.__label_to_class_id[label]
 
-        def read_label(self, raw_file: str) -> str:
+        def read_label(self, raw_file: str) -> Union[str, List[str], None]:
             label = raw_file.split("/")[-2]
             if label not in self.__label_to_class_id.keys():
                 num_entries = len(self.__label_to_class_id)
@@ -67,10 +67,8 @@ class NCaltech101(EventDataModule):
             events = np.column_stack((all_x, all_y, all_ts, all_p))
             events = torch.from_numpy(events).float().cuda()
 
-            obj_class = raw_file.split("/")[-2]
-            file_id = raw_file.split("/")[-1]
             x, pos = events[:, -1:], events[:, :3]   # x = polarity, pos = spatio-temporal position
-            data_obj = torch_geometric.data.Data(x=x, pos=pos, class_id=obj_class, file_id=file_id)
+            data_obj = torch_geometric.data.Data(x=x, pos=pos)
             return data_obj
 
         def get_sections(self, data_obj: torch_geometric.data.Data, wdt: float = 0.03

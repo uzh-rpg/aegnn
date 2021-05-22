@@ -16,5 +16,6 @@ except ModuleNotFoundError:
 # can simply be changed prior to importing the `aegnn` module.
 aegnn.utils.io.setup_environment({
     "AEGNN_DATA_DIR": "/data/storage/simonschaefer/",
+    "AEGNN_DATASET_DIR": "/data/storage/datasets",
     "AEGNN_LOG_DIR": "/data/scratch/simonschaefer/"
 })

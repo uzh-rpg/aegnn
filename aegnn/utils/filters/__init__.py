@@ -1,4 +1,4 @@
-from aegnn.utils.filters.class_id import Label
+from aegnn.utils.filters.label import Label
 
 ################################################################################################
 # Access functions #############################################################################

@@ -33,10 +33,10 @@ class EventDataset(torch_geometric.data.Dataset):
     def read_annotations(self, raw_file: str) -> Union[np.ndarray, None]:
         return None
 
-    def read_class_id(self, raw_file: str) -> Union[int, None]:
+    def read_class_id(self, raw_file: str) -> Union[int, List[int], None]:
         return None
 
-    def read_label(self, raw_file: str) -> Union[str, None]:
+    def read_label(self, raw_file: str) -> Union[str, List[str], None]:
         return None
 
     def load(self, raw_file: str) -> torch_geometric.data.Data:
@@ -100,16 +100,17 @@ class EventDataset(torch_geometric.data.Dataset):
 
             # Load data from raw file. If the according loaders are available, add annotation, label and class id.
             data_obj = load_func(rf)
+            data_obj.file_id = os.path.basename(rf)
             if (label := read_label(rf)) is not None:
-                data_obj.label = list(label)
+                data_obj.label = label if isinstance(label, list) else [label]
             if (class_id := read_class_id(rf)) is not None:
-                data_obj.class_id = int(class_id)
+                data_obj.class_id = class_id if isinstance(class_id, list) else [class_id]
             if (bbox := read_annotations(rf)) is not None:
                 data_obj.bbox = torch.tensor(bbox)
 
             # Apply pre-filter and pre-transform to the data object, if defined.
             if pre_filter is not None and not pre_filter(data_obj):
-                return []
+                return
 
             # Divide the loaded data into sections. Then for each section, apply the pre-transform
             # on the graph, to afterwards store it as .pt-file.
