@@ -19,7 +19,7 @@ def add_pascalvoc_bounding_boxes(bounding_boxes: BoundingBoxes, gt_bbox: torch.T
             if gt_bbox[i_batch, i_gt, :].sum() == 0:
                 break
 
-            bb_gt = BoundingBox(image_id[i_batch], gt_bbox_sample[-1], gt_bbox_sample[1], gt_bbox_sample[0],
+            bb_gt = BoundingBox(image_id[i_batch], gt_bbox_sample[-1], gt_bbox_sample[0], gt_bbox_sample[1],
                                 gt_bbox_sample[2], gt_bbox_sample[3], image_size, bbType=BBType.GroundTruth,
                                 classConfidence=1.0)
             bounding_boxes.addBoundingBox(bb_gt)

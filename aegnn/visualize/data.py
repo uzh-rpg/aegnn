@@ -24,7 +24,7 @@ def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] 
     :param ax: matplotlib axes to draw in.
     """
     hist = compute_histogram(data.pos[:, :2].cpu().numpy(), img_shape=img_shape, max_count=max_count)
-    return image(hist, title=title, bbox=bbox,
+    return image(hist.T, title=title, bbox=bbox,
                  bbox_gt=getattr(data, "bbox", None), labels_gt=getattr(data, "label", None), ax=ax)
 
 
@@ -59,7 +59,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = None, bbox: torch.T
             corner_point = (bounding_box[0], bounding_box[1])
             label = labels_gt[i] if labels_gt is not None else ""
             label += f"[{int(bounding_box[-1])}]"
-            ax = draw_bounding_box(corner_point, w, h, color="red", text=label, padding=padding, ax=ax)
+            ax = draw_bounding_box(corner_point, w, h, "red", text=label, padding=padding, ax=ax)
 
     # If bounding boxes are passed to the function, draw them additional to the annotation
     # bounding boxes. Use the prediction confidence as score.
@@ -71,7 +71,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = None, bbox: torch.T
             corner_point = bbox_i[1:3]
             class_id, class_conf = int(bbox_i[5]), float(bbox_i[6])
             label = f"[{class_id}]({class_conf})"
-            ax = draw_bounding_box(corner_point, w, h, color="green", text=label, padding=padding, ax=ax)
+            ax = draw_bounding_box(corner_point, w, h, "green", text=label, padding=padding, ax=ax)
 
     return ax
 

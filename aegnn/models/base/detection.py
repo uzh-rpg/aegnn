@@ -1,4 +1,5 @@
 """Partly copied from rpg-asynet paper: https://github.com/uzh-rpg/rpg_asynet"""
+import numpy as np
 import torch
 import torch_geometric
 import pytorch_lightning as pl
@@ -125,7 +126,7 @@ class DetectionModel(pl.LightningModule):
                                                         image_id=getattr(batch, "file_id"), image_size=self.input_shape)
             map_method = MethodAveragePrecision.EveryPointInterpolation
             metrics = self.evaluator.GetPascalVOCMetrics(training_bbs, IOUThreshold=0.5, method=map_method)
-            metrics_logs[f"{prefix}mAP"] = sum([m["AP"] for m in metrics]) / self.num_classes
+            metrics_logs[f"{prefix}mAP"] = np.mean([m["AP"] for m in metrics])
 
         return metrics_logs
 
