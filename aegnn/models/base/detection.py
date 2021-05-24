@@ -1,5 +1,4 @@
 """Partly copied from rpg-asynet paper: https://github.com/uzh-rpg/rpg_asynet"""
-import numpy as np
 import torch
 import torch_geometric
 import pytorch_lightning as pl
@@ -8,9 +7,8 @@ import pytorch_lightning.metrics.functional as pl_metrics
 from typing import Dict, Tuple
 
 from ..utils import bounding_box as model_utils
-from ..utils import metrics as model_metrics
-from ..utils.pascalvoc import BoundingBoxes, MethodAveragePrecision, VOC_Evaluator
-from ..utils.pascalvoc_bbox import add_pascalvoc_bounding_boxes
+from ..utils.iou import compute_iou
+from ..utils.map import compute_map
 
 
 class DetectionModel(pl.LightningModule):
@@ -31,7 +29,6 @@ class DetectionModel(pl.LightningModule):
         self.num_outputs = self.num_outputs_per_cell * self.cell_map_shape[0] * self.cell_map_shape[1]  # detection grid
 
         self.optimizer_kwargs = dict(lr=learning_rate)
-        self.evaluator = VOC_Evaluator()
 
     ###############################################################################################
     # Steps #######################################################################################
@@ -117,16 +114,10 @@ class DetectionModel(pl.LightningModule):
         metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(detected_bb[:, 5].long(), target=batch.y[dbb_batch_idx])
 
         with torch.no_grad():
-            gt_bb = getattr(batch, "bbox").to(self.device)
+            gt_bbox = getattr(batch, "bbox")
             detected_bb = self.detect(model_outputs, threshold=0.3)
             detected_bb = model_utils.non_max_suppression(detected_bb, iou=0.6)
-            detected_bb = detected_bb.detach().cpu().numpy()
-
-            training_bbs = add_pascalvoc_bounding_boxes(BoundingBoxes(), gt_bb, detected_bbox=detected_bb,
-                                                        image_id=getattr(batch, "file_id"), image_size=self.input_shape)
-            map_method = MethodAveragePrecision.EveryPointInterpolation
-            metrics = self.evaluator.GetPascalVOCMetrics(training_bbs, IOUThreshold=0.5, method=map_method)
-            metrics_logs[f"{prefix}mAP"] = np.mean([m["AP"] for m in metrics])
+            metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bb)
 
         return metrics_logs
 
@@ -150,7 +141,7 @@ class DetectionModel(pl.LightningModule):
         if threshold is None:
             return torch.cat([bbox_top_left_corner, w.unsqueeze(-1), h.unsqueeze(-1), pred_conf.unsqueeze(-1)], dim=-1)
 
-        detected_bbox_idx = torch.gt(pred_conf, threshold).nonzero().split(1, dim=-1)
+        detected_bbox_idx = torch.nonzero(torch.gt(pred_conf, threshold)).split(1, dim=-1)
         batch_idx = detected_bbox_idx[0]
         if batch_idx.shape[0] == 0:
             return torch.zeros([0, 7])
@@ -190,7 +181,7 @@ class DetectionModel(pl.LightningModule):
         bbox_detection = self.detect(model_output, threshold=None)
         batch_indices = torch.arange(batch_s)[:, None].repeat([1, gt_nr_bbox])
         bbox_detection = bbox_detection[batch_indices, gt_cell_x, gt_cell_y, :, :]
-        iou = model_metrics.compute_iou(bbox_detection[:, :, :, :4], gt_bbox=bounding_box[:, :, :4])
+        iou = compute_iou(bbox_detection[:, :, :, :4], gt_bbox=bounding_box[:, :, :4])
         confidence_score, responsible_pred_bbox_idx = torch.max(iou, dim=-1)
 
         # ----- Offset Loss -----
