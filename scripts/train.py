@@ -34,10 +34,9 @@ if __name__ == '__main__':
         aegnn.callbacks.BBoxLogger(classes=dm.classes),
         aegnn.callbacks.PHyperLogger(args),
         # aegnn.callbacks.ConfusionMatrix(classes=dm.classes),
-        aegnn.callbacks.DatasetLogger(),
         aegnn.callbacks.FileLogger(objects=[model, dm.pre_filter, dm.pre_transform, *dm.transforms]),
         # pl.callbacks.EarlyStopping(monitor="Val/Accuracy", mode="max", min_delta=0.02, patience=20),
-        pl.callbacks.LearningRateMonitor(),
+        # pl.callbacks.LearningRateMonitor(),
         # pl.callbacks.ModelCheckpoint(dirpath=model_dir, save_top_k=1, monitor="Val/Loss", mode="min")
     ]
 
