@@ -38,7 +38,7 @@ class EventDataModule(pl.LightningDataModule):
         return DataLoader(subset, collate_fn=self.train_dataset.collate, **self.__kwargs)
 
     def val_dataloader(self) -> DataLoader:
-        subset = self.train_dataset.get_subset(label=self.classes)
+        subset = self.val_dataset.get_subset(label=self.classes)
         batch_size = min(self.__kwargs.get("batch_size", 1), len(subset))
         return DataLoader(subset, collate_fn=self.val_dataset.collate, batch_size=batch_size,
                           num_workers=2, shuffle=False)

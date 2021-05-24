@@ -33,7 +33,9 @@ def from_args(args: argparse.Namespace) -> Union[EventDataModule, None]:
     # means that the pre-filter is used that has been stored with the data, i.e. that the
     # processed data is being used like it is.
     if args.tf.pre_filter == "default":
-        pf, classes_selected = get_pre_filter(dataset=args.dataset)
+        pf, classes_selected_pf = get_pre_filter(dataset=args.dataset)
+        if len(classes_selected) == 0:
+            classes_selected = classes_selected_pf
     else:
         pf = aegnn.utils.filters.by_name(name=args.tf.pre_filter, labels=classes_selected)
 

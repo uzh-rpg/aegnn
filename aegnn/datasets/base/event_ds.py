@@ -7,7 +7,6 @@ import torch_geometric
 
 from torch.utils.data import Subset
 from torch_geometric.data import Batch, Data, Dataset
-from tqdm import tqdm
 from typing import Callable, Dict, List, Tuple, Union
 
 from aegnn.utils.multiprocessing import TaskManager
@@ -140,7 +139,7 @@ class EventDataset(Dataset):
         assert all([isinstance(v, list) for v in kwargs.values()]), "values should be lists"
         indices = []
 
-        for i, pf in enumerate(tqdm(self.processed_paths)):
+        for i, pf in enumerate(self.processed_paths):
             meta_dict = torch.load(pf.replace(".data.pt", ".meta"))
             is_inside = True
 

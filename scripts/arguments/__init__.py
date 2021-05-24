@@ -29,11 +29,9 @@ def add_trainer_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     group.add_argument("--train.log-gradients", action="store_true")
     group.add_argument("--train.log-steps", action="store", default=10, type=int)
     group.add_argument("--train.gradient-clipping", action="store", default=0.0, type=float)
-    group.add_argument("--train.limit_train_batches", action="store", default=1.0)
 
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--gpu", action="store", default=None, type=int)
-    parser.add_argument("--logging", action="store", default=True, type=lambda x: x.lower() == "true")
 
     return parser
 

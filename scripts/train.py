@@ -51,7 +51,6 @@ if __name__ == '__main__':
     trainer_kwargs["track_grad_norm"] = 2 if args.train.log_gradients else -1
     trainer_kwargs["log_every_n_steps"] = args.train.log_steps
     trainer_kwargs["accelerator"] = None
-    trainer_kwargs["limit_train_batches"] = args.train.limit_train_batches
 
     trainer = pl.Trainer(logger=logger, callbacks=callbacks, **trainer_kwargs)
     trainer.fit(model, datamodule=dm)
