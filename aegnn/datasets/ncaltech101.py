@@ -1,3 +1,4 @@
+import functools
 import glob
 import numpy as np
 import os
@@ -14,11 +15,6 @@ class NCaltech101(EventDataModule):
 
     class NCaltech101DS(EventDataset):
 
-        def __init__(self, root: str, transforms: Callable, pre_transform: Callable, pre_filter: Callable,
-                     classes: List[str] = None, mode: str = "training", num_workers: int = 1):
-            self.__label_to_class_id = {}
-            super().__init__(root, transforms, pre_transform, pre_filter, classes, mode, num_workers)
-
         def process(self):
             """Required by `torch_geometric.data.Dataset` in order to start processing."""
             super().process()
@@ -32,7 +28,8 @@ class NCaltech101(EventDataModule):
             annotations = np.array(annotations[2:10])
             f.close()
 
-            class_id = self.read_class_id(raw_file)
+            label = self.read_label(raw_file)
+            class_id = self.map_label(label)
             return np.array([
                 annotations[1], annotations[0],  # upper-left corner
                 annotations[5] - annotations[1],  # width
@@ -40,16 +37,8 @@ class NCaltech101(EventDataModule):
                 class_id
             ]).reshape((1, 1, -1))
 
-        def read_class_id(self, raw_file: str) -> Union[int, List[int], None]:
-            label = self.read_label(raw_file)
-            return self.__label_to_class_id[label]
-
         def read_label(self, raw_file: str) -> Union[str, List[str], None]:
-            label = raw_file.split("/")[-2]
-            if label not in self.__label_to_class_id.keys():
-                num_entries = len(self.__label_to_class_id)
-                self.__label_to_class_id[label] = num_entries
-            return label
+            return raw_file.split("/")[-2]
 
         def load(self, raw_file: str) -> torch_geometric.data.Data:
             f = open(raw_file, 'rb')
@@ -85,16 +74,31 @@ class NCaltech101(EventDataModule):
             data.pos = data.pos[idx_select, :]
             return [data]
 
+        @functools.lru_cache(maxsize=100)
+        def map_label(self, label: str) -> int:
+            label_dict = {lbl: i for i, lbl in enumerate(self.classes)}
+            return label_dict.get(label, None)
+
+        #########################################################################################################
+        # Files #################################################################################################
+        #########################################################################################################
         @property
         def raw_files(self):
             return glob.glob(os.path.join(self.raw_dir, "*", "*.bin"), recursive=True)
+
+        @property
+        def raw_classes(self) -> List[str]:
+            return os.listdir(os.path.join(self.root, "raw"))
+
+        #########################################################################################################
+        # Meta ##################################################################################################
+        #########################################################################################################
+        @property
+        def img_shape(self) -> Tuple[int, int]:
+            return 240, 180
 
     #########################################################################################################
     # Data Module ###########################################################################################
     #########################################################################################################
     def __init__(self, **kwargs):
         super().__init__(dataset_class=self.NCaltech101DS, **kwargs)
-
-    @property
-    def img_shape(self) -> Tuple[int, int]:
-        return 240, 180

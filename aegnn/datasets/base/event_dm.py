@@ -1,7 +1,7 @@
 import os
 import pytorch_lightning as pl
 
-from torch_geometric.data import DataLoader
+from torch.utils.data.dataloader import DataLoader
 from typing import List, Optional, Tuple, Union
 
 from aegnn.utils.filters import Filter
@@ -34,11 +34,14 @@ class EventDataModule(pl.LightningDataModule):
     # Data Loaders ##########################################################################################
     #########################################################################################################
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_dataset, **self.__kwargs)
+        subset = self.train_dataset.get_subset(label=self.classes)
+        return DataLoader(subset, collate_fn=self.train_dataset.collate, **self.__kwargs)
 
     def val_dataloader(self) -> DataLoader:
-        batch_size = min(self.__kwargs.get("batch_size", 1), len(self.val_dataset))
-        return DataLoader(self.val_dataset, batch_size=batch_size, num_workers=2, shuffle=False)
+        subset = self.train_dataset.get_subset(label=self.classes)
+        batch_size = min(self.__kwargs.get("batch_size", 1), len(subset))
+        return DataLoader(subset, collate_fn=self.val_dataset.collate, batch_size=batch_size,
+                          num_workers=2, shuffle=False)
 
     #########################################################################################################
     # Transform Properties ##################################################################################
@@ -72,7 +75,7 @@ class EventDataModule(pl.LightningDataModule):
 
     @property
     def img_shape(self) -> Tuple[int, int]:
-        raise NotImplementedError
+        return self.train_dataset.img_shape
 
     def __repr__(self):
         train_desc = self.train_dataset.__repr__()

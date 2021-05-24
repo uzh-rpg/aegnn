@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from torch_geometric.data import Data
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Union
 
 from .base.event_ds import EventDataset
 from .base.event_dm import EventDataModule
@@ -29,11 +29,8 @@ class Megapixel(EventDataModule):
             bbox[is_car, -1] = 1
             return bbox
 
-        def read_class_id(self, raw_file: str) -> Union[int, List[int], None]:
-            return self.read_annotations(raw_file)[:, -1]
-
         def read_label(self, raw_file: str) -> Union[str, List[str], None]:
-            class_id = self.read_class_id(raw_file)
+            class_id = self.read_annotations(raw_file)[:, -1]
             label_dict = {0: "pedestrian", 1: "car"}
             return label_dict.get(class_id, None)
 
@@ -41,26 +38,30 @@ class Megapixel(EventDataModule):
             data = self._load_file(raw_file)
             return Data(x=data.x.float(), pos=data.pos.float())
 
+        @functools.lru_cache(maxsize=10)
+        def _load_file(self, f_path: str):
+            return torch.load(f_path)
+
+        #########################################################################################################
+        # Files #################################################################################################
+        #########################################################################################################
         @property
         def raw_files(self):
             return glob.glob(os.path.join(self.raw_dir, "*.pt"))
 
-        @functools.lru_cache(maxsize=10)
-        def _load_file(self, f_path: str):
-            return torch.load(f_path)
+        @property
+        def raw_classes(self) -> List[str]:
+            return ["pedestrian", "car"]
+
+        #########################################################################################################
+        # Meta ##################################################################################################
+        #########################################################################################################
+        @property
+        def img_shape(self) -> Tuple[int, int]:
+            return 1280, 720
 
     #########################################################################################################
     # Data Module ###########################################################################################
     #########################################################################################################
     def __init__(self, **kwargs):
         super().__init__(dataset_class=self.MegapixelDS, **kwargs)
-
-    def setup(self, stage: Optional[str] = None):
-        pass
-
-    def prepare_data(self, *args, **kwargs):
-        pass
-
-    @property
-    def img_shape(self) -> Tuple[int, int]:
-        return 1280, 720

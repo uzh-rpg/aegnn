@@ -5,25 +5,28 @@ import os
 import torch
 import torch_geometric
 
-from typing import Callable, List, Union
+from torch.utils.data import Subset
+from torch_geometric.data import Batch, Data, Dataset
+from tqdm import tqdm
+from typing import Callable, Dict, List, Tuple, Union
 
 from aegnn.utils.multiprocessing import TaskManager
 
 
-class EventDataset(torch_geometric.data.Dataset):
+class EventDataset(Dataset):
 
     def __init__(self, root: str, transforms: Callable, pre_transform: Callable, pre_filter: Callable,
                  classes: List[str] = None, mode: str = "training", num_workers: int = 1):
         root_mode = os.path.join(root, mode)
         if not os.path.isdir(root_mode):
             raise FileNotFoundError(f"Mode {mode} not found at root {root}!")
-
-        self.classes = classes or os.listdir(os.path.join(root_mode, "raw"))
-        self.num_workers = num_workers
         transform = torch_geometric.transforms.Compose(transforms)
+        self.num_workers = num_workers
+        self.root = root_mode
+        self.classes = classes or self.raw_classes
         super().__init__(root=root_mode, transform=transform, pre_transform=pre_transform, pre_filter=pre_filter)
 
-    def get(self, idx: int) -> torch_geometric.data.Data:
+    def get(self, idx: int) -> Data:
         data_file = str(os.path.join(self.processed_dir, self.processed_file_names[idx]))
         return torch.load(data_file)
 
@@ -33,21 +36,26 @@ class EventDataset(torch_geometric.data.Dataset):
     def read_annotations(self, raw_file: str) -> Union[np.ndarray, None]:
         return None
 
-    def read_class_id(self, raw_file: str) -> Union[int, List[int], None]:
-        return None
-
     def read_label(self, raw_file: str) -> Union[str, List[str], None]:
         return None
 
-    def load(self, raw_file: str) -> torch_geometric.data.Data:
+    def load(self, raw_file: str) -> Data:
         raise NotImplementedError
 
-    def get_sections(self, data_obj: torch_geometric.data.Data) -> List[torch_geometric.data.Data]:
+    def get_sections(self, data_obj: Data) -> List[Data]:
         return [data_obj]
 
     def process(self):
-        # Processing the raw files in parallel processes. Importantly, the functions must therefore be able to be
-        # pickled, i.e. not using dynamic types or not-shared class variables.
+        """Pre-process raw files to enable more efficient loading during training/inference.
+
+        The process function is called by the `torch_geometric.data.Dataset` super-class when the processed
+        directory is empty, or when not all files that are listed as processed files can be found. This function
+        is made to process the whole dataset, not single files, in parallel processing.
+
+        Loading the data, annotations, labels, etc. is dataset specific and therefore to be defined in the
+        sub-classes. Importantly, the functions must therefore be able to be pickled, i.e. not using dynamic
+        types or not-shared class variables.
+        """
         if self.num_workers > 1:
             logging.info(f"Processing raw files with {self.num_workers} workers")
             task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(self.raw_paths))
@@ -60,36 +68,25 @@ class EventDataset(torch_geometric.data.Dataset):
         for rf in self.raw_paths:
             process(*args, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir, load_func=self.load,
                     pre_filter=self.pre_filter, pre_transform=self.pre_transform,
-                    get_sections=self.get_sections, read_label=self.read_label,
+                    get_sections=self.get_sections, build_meta_info=self.build_meta_info, read_label=self.read_label,
                     read_annotations=self.read_annotations, read_class_id=self.read_class_id)
 
     @staticmethod
     def processing(rf: str, raw_dir: str, target_dir: str,
-                   load_func: Callable[[str], torch_geometric.data.Data], read_label: Callable[[str], str],
-                   read_class_id: Callable[[str], int], read_annotations: Callable[[str], np.ndarray],
-                   get_sections: Callable[[torch_geometric.data.Data], List[torch_geometric.data.Data]],
+                   load_func: Callable[[str], Data],
+                   read_label: Callable[[str], str], read_annotations: Callable[[str], np.ndarray],
+                   get_sections: Callable[[Data], List[Data]],
+                   build_meta_info: Callable[[Data], Dict[str, str]],
                    pre_filter: Callable = None, pre_transform: Callable = None):
         """Processing raw file on cuda device for object detection/recognition task, including the following steps:
 
-        1. Loading and converting the data to `torch_geometric.data.Data` object.
-        2. Assigning y based on class id
+        1. Loading and converting the data to `Data` object.
+        2. Load additional data such as class_id, bounding box, etc.
         3. Filtering the data out, if required.
-        4. Add annotations such as bounding boxes.
-        5. Crop several selected windows from the data.
-        6. Perform the pre-processing transformation on each selected window.
-        7. Save the resulting objects in the `target_dir` as torch file.
-
-        :param rf: absolute path to raw file to process.
-        :param raw_dir: absolute path to the directory of raw files.
-        :param target_dir: absolute path to the directory to save processed data.
-        :param load_func: function to load raw file as data object (str -> `torch_geometric.data.Data`).
-        :param read_label: function to read the label given the raw data file (str -> str).
-        :param read_class_id: function to read the class id given the raw data file (str -> int).
-        :param read_annotations: function to read annotations given the raw data file (str -> `np.array`).
-        :param get_sections: divide the full loaded data into sections (`torch_geometric.data.Data` -> List[Data]).
-        :param pre_filter: pre-filtering data object (`torch_geometric.data.Data` -> bool).
-        :param pre_transform: transforming data object (`torch_geometric.data.Data` -> `torch_geometric.data.Data`).
-        """
+        4. Crop several selected windows from the data.
+        5. Perform the pre-processing transformation on each selected window.
+        6. Save the resulting objects in the `target_dir` as torch file.
+        7. Save meta information about the data object for quick access."""
         cuda_id = torch.cuda.current_device()
 
         with torch.cuda.device(cuda_id):
@@ -103,8 +100,6 @@ class EventDataset(torch_geometric.data.Dataset):
             data_obj.file_id = os.path.basename(rf)
             if (label := read_label(rf)) is not None:
                 data_obj.label = label if isinstance(label, list) else [label]
-            if (class_id := read_class_id(rf)) is not None:
-                data_obj.class_id = class_id if isinstance(class_id, list) else [class_id]
             if (bbox := read_annotations(rf)) is not None:
                 data_obj.bbox = torch.tensor(bbox)
 
@@ -125,11 +120,67 @@ class EventDataset(torch_geometric.data.Dataset):
                 # Save the section data object as .pt-torch-file. For the sake of a uniform processed
                 # directory format make all output paths flat.
                 os.makedirs(os.path.dirname(pf_flat), exist_ok=True)
-                torch.save(section.to("cpu"), pf_flat.replace(".pt", f".{i}.pt"))
+                torch.save(section.to("cpu"), pf_flat.replace(".pt", f".{i}.data.pt"))
+
+                # For building class-dependent subsets of data, write meta-information about the
+                # data point in an additional text file, so that they can be accessed without having to
+                # load the whole file.
+                meta_info = build_meta_info(section)
+                torch.save(meta_info, pf_flat.replace(".pt", f".{i}.meta"))
+
+    #########################################################################################################
+    # Meta-Information & Subset #############################################################################
+    #########################################################################################################
+    @staticmethod
+    def build_meta_info(data: Data) -> Dict[str, str]:
+        return {"label": getattr(data, "label", None)}
+
+    def get_subset(self, **kwargs) -> Subset:
+        logging.info(f"Creating subset based on filters {kwargs}")
+        assert all([isinstance(v, list) for v in kwargs.values()]), "values should be lists"
+        indices = []
+
+        for i, pf in enumerate(tqdm(self.processed_paths)):
+            meta_dict = torch.load(pf.replace(".data.pt", ".meta"))
+            is_inside = True
+
+            for key, values in kwargs.items():
+                p_values = meta_dict.get(key, None)
+                if p_values is None:
+                    continue
+                elif not set(p_values).isdisjoint(set(values)):
+                    continue
+                is_inside = False
+                break
+
+            if is_inside:
+                indices.append(i)
+        return Subset(self, indices=indices)
+
+    def collate(self, batch: Batch) -> Batch:
+        batch_new = []
+        label_dict = {label: i for i, label in enumerate(self.classes)}
+
+        for data in batch:
+            arg_label = [i for i, lbl in enumerate(data.label) if lbl in self.classes]
+            data.label = [data.label[i] for i in arg_label]
+            class_id = [label_dict[lbl] for lbl in data.label]
+            with torch.no_grad():
+                class_id = torch.tensor(class_id, dtype=torch.long, device=data.bbox.device)
+                data.bbox = data.bbox[arg_label, :]
+                data.bbox[..., -1] = class_id
+                data.y = class_id
+
+            batch_new.append(data)
+        return Batch.from_data_list(batch_new)
 
     #########################################################################################################
     # Files #################################################################################################
     #########################################################################################################
+    @property
+    def raw_classes(self) -> List[str]:
+        raise NotImplementedError
+
     @property
     def raw_files(self):
         raise NotImplementedError
@@ -140,10 +191,17 @@ class EventDataset(torch_geometric.data.Dataset):
 
     @property
     def processed_file_names(self):
-        files = glob.glob(os.path.join(self.processed_dir, "*.pt"), recursive=True)
+        files = glob.glob(os.path.join(self.processed_dir, "*.data.pt"), recursive=True)
         if len(files) == 0:
             return ["unknown"]
         return [os.path.relpath(f, start=self.processed_dir) for f in files]
+
+    #########################################################################################################
+    # Meta ##################################################################################################
+    #########################################################################################################
+    @property
+    def img_shape(self) -> Tuple[int, int]:
+        raise NotImplementedError
 
     def len(self) -> int:
         return len(self.processed_file_names)
