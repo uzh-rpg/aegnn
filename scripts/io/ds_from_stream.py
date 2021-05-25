@@ -59,13 +59,13 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
     bbox_to_idx = read_bbox_to_id(f_path)
 
     num_events = x.size
-    for bbox_idx, idx in tqdm(bbox_to_idx):
+    for bbox_idx, idx in bbox_to_idx:
         ws = max(idx - window_size_bd, 0)
         we = min(idx + window_size_fd, num_events - 1)
 
         w_bbox_mask = np.logical_and(t_bbox >= t[ws], t_bbox <= t[we])
         w_bbox = bbox[w_bbox_mask, :]
-        w_pos = np.stack([x[ws:we], y[ws:we], t[ws:we] - t[ws]], axis=-1).astype(np.uint32)
+        w_pos = np.stack([x[ws:we], y[ws:we], t[ws:we] - t[ws]], axis=-1).astype(np.int32)
         w_p = p[ws:we].astype(bool)
 
         output_directory = os.path.join(os.environ["AEGNN_DATA_DIR"], "megapixel", ds, "raw")
@@ -82,15 +82,18 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
 if __name__ == '__main__':
     args = parse_args()
     dataset_dir = os.environ["AEGNN_DATASET_DIR"]
+    ds_tuples = [("train", "training", 8), ("val", "validation", 2)]
 
-    for ds_type in ["train", "val"]:
-        logging.info(f"Processing {ds_type} dataset")
-        dataset_dir = os.path.join(dataset_dir, f"oneMP_add/Large_Automotive_Detection_Dataset_extracted/{ds_type}/")
-        h5_files = glob.glob(os.path.join(dataset_dir, "*"))
+    file_dict = {}
+    for ds_type, ds_name, max_samples in ds_tuples:
+        ds_dir = os.path.join(dataset_dir, f"oneMP_add/Large_Automotive_Detection_Dataset_extracted/{ds_type}/")
+        h5_files = glob.glob(os.path.join(ds_dir, "*"))
         h5_files = list(filter(lambda f: f.endswith(".h5"), h5_files))
+        file_dict[ds_name] = h5_files[:max_samples]
 
-        task_manager = TaskManager(args.num_workers, queue_size=args.num_workers, total=len(h5_files))
-        for i, h5file in enumerate(h5_files):
-            if i > 10:
-                break
-            task_manager.queue(process, f_path=h5file, ds=ds_type, **vars(args))
+    num_files = sum([len(files) for files in file_dict.values()])
+    task_manager = TaskManager(args.num_workers, queue_size=args.num_workers, total=num_files)
+    for ds_name, ds_files in file_dict.items():
+        logging.info(f"Processing {ds_name} dataset")
+        for f in ds_files:
+            task_manager.queue(process, f_path=f, ds=ds_name, **vars(args))
