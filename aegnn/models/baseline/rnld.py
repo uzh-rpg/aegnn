@@ -6,13 +6,15 @@ from torch.nn.functional import elu
 from torch_geometric.nn.conv import GMMConv
 from torch_geometric.nn.norm import BatchNorm
 from torch_geometric.nn.pool import max_pool_x, voxel_grid
-from aegnn.models.base import DetectionModel
+from typing import Tuple
+
+from ..base import DetectionModel
 
 
 class RNLD(DetectionModel):
 
-    def __init__(self, num_classes: int, num_bounding_boxes: int = 1, **kwargs):
-        super().__init__(learning_rate=1e-3, num_classes=num_classes, num_bounding_boxes=num_bounding_boxes)
+    def __init__(self, num_classes: int, img_shape: Tuple[int, int], num_bounding_boxes: int = 1, **kwargs):
+        super().__init__(num_classes, num_bounding_boxes=num_bounding_boxes, img_shape=img_shape, learning_rate=1e-3)
         self.conv1 = GMMConv(1, out_channels=8, dim=2, kernel_size=2)
         self.norm1 = BatchNorm(in_channels=8)
         self.conv2 = GMMConv(8, out_channels=16, dim=2, kernel_size=2)
@@ -45,7 +47,8 @@ class RNLD(DetectionModel):
         data.x = elu(self.conv5(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm5(data.x)
 
-        cluster = voxel_grid(data.pos, data.batch, size=[60, 45])
+        grid_size = self.input_shape // 4
+        cluster = voxel_grid(data.pos, data.batch, size=grid_size)
         x, _ = max_pool_x(cluster, data.x, data.batch, size=16)
 
         x = x.view(-1, self.fc1.in_features)

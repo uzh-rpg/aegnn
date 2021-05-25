@@ -6,6 +6,7 @@ from torch.nn.functional import dropout, elu
 from torch_geometric.nn.conv import SplineConv
 from torch_geometric.nn.norm import BatchNorm
 from torch_geometric.nn.pool import max_pool_x, voxel_grid
+from typing import Tuple
 
 from .base import DetectionModel
 from .nvs import NVS
@@ -13,8 +14,8 @@ from .nvs import NVS
 
 class NVSD(DetectionModel):
 
-    def __init__(self, num_classes: int, num_bounding_boxes: int = 1, **kwargs):
-        super().__init__(learning_rate=0.001, num_classes=num_classes, num_bounding_boxes=num_bounding_boxes)
+    def __init__(self, num_classes: int, img_shape: Tuple[int, int], num_bounding_boxes: int = 1, **kwargs):
+        super().__init__(num_classes, num_bounding_boxes=num_bounding_boxes, img_shape=img_shape, learning_rate=1e-3)
 
         self.conv1 = SplineConv(1, out_channels=64, dim=2, kernel_size=5)
         self.norm1 = BatchNorm(in_channels=64)
@@ -49,7 +50,9 @@ class NVSD(DetectionModel):
 
         data.x = elu(self.conv5(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm5(data.x)
-        cluster = voxel_grid(data.pos, data.batch, size=[60, 45])
+
+        grid_size = self.input_shape // 4
+        cluster = voxel_grid(data.pos, data.batch, size=grid_size)
         x, _ = max_pool_x(cluster, data.x, data.batch, size=16)
 
         x = x.view(-1, 16 * 512)

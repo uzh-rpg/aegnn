@@ -90,7 +90,7 @@ class EventDataset(Dataset):
         if (bbox := read_annotations(rf)) is not None:
             bbox = crop_to_frame(torch.tensor(bbox), image_shape=img_shape)
             is_not_empty = is_bbox_zero(bbox)
-            data_obj.bbox = bbox[~is_not_empty, :]
+            data_obj.bbox = bbox[~is_not_empty, :].long()
             if hasattr(data_obj, "label"):
                 data_obj.label = [lbl for lbl, ie in zip(data_obj.label, is_not_empty) if not ie]
 

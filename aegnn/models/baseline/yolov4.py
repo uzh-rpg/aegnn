@@ -6,13 +6,15 @@ from torch.nn.functional import leaky_relu
 from torch_geometric.nn.conv import GCNConv
 from torch_geometric.nn.norm import BatchNorm
 from torch_geometric.nn.pool import max_pool_x, voxel_grid
-from aegnn.models.base import DetectionModel
+from typing import Tuple
+
+from ..base import DetectionModel
 
 
 class YoloV4(DetectionModel):
 
-    def __init__(self, num_classes: int, num_bounding_boxes: int = 1, **kwargs):
-        super().__init__(learning_rate=1e-3, num_classes=num_classes, num_bounding_boxes=num_bounding_boxes)
+    def __init__(self, num_classes: int, img_shape: Tuple[int, int], num_bounding_boxes: int = 1, **kwargs):
+        super().__init__(num_classes, num_bounding_boxes=num_bounding_boxes, img_shape=img_shape, learning_rate=1e-3)
         self.conv1 = GCNConv(1, out_channels=8)
         self.conv2 = GCNConv(8, out_channels=16)
         self.conv3 = GCNConv(16, out_channels=32)
@@ -46,8 +48,9 @@ class YoloV4(DetectionModel):
         data.x = torch.cat([x_sc_outer, data.x], dim=-1)
         data.x = leaky_relu(self.conv5(data.x, data.edge_index))
 
-        cluster = voxel_grid(data.pos, data.batch, size=[60, 45])
-        x, _ = max_pool_x(cluster, data.x, data.batch, size=16)
+        grid_size = self.input_shape // 4
+        cluster = voxel_grid(data.pos, data.batch, size=grid_size)
+        x, _ = max_pool_x(cluster, data.x, data.batch, size=16)  # 4 * 4 = 16
 
         x = x.view(-1, self.fc1.in_features)
         x = leaky_relu(self.fc1(x))

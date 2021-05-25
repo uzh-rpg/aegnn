@@ -18,13 +18,14 @@ class DetectionModel(pl.LightningModule):
     __lambda_no_object = 0.5
     __lambda_class = 1
 
-    def __init__(self, num_classes: int, num_bounding_boxes: int = 1, learning_rate: float = 1e-3):
+    def __init__(self, num_classes: int, img_shape: Tuple[int, int], num_bounding_boxes: int = 1,
+                 learning_rate: float = 1e-3):
         super().__init__()
         self.num_classes = num_classes
         self.num_bounding_boxes = num_bounding_boxes
         # self.cell_map_shape = (7, 5)
         self.cell_map_shape = (1, 1)
-        self.input_shape = torch.tensor((255, 191))  # ncaltech101!!
+        self.input_shape = torch.tensor(img_shape, device=self.device)
 
         self.num_outputs_per_cell = num_classes + num_bounding_boxes * 5  # (x, y, width, height, confidence)
         self.num_outputs = self.num_outputs_per_cell * self.cell_map_shape[0] * self.cell_map_shape[1]  # detection grid
@@ -161,7 +162,7 @@ class DetectionModel(pl.LightningModule):
                              detected_top_left_corner[:, 1, None].float(), detected_w.float(), detected_h.float(),
                              pred_cls.float(), pred_cls_conf[:, None].float(), pred_conf], dim=-1)
 
-        det_bbox[:, 1:5] = crop_to_frame(det_bbox[1:5], input_shape)
+        det_bbox[:, 1:5] = crop_to_frame(det_bbox[:, 1:5], image_shape=input_shape)
         return det_bbox
 
     ###############################################################################################
