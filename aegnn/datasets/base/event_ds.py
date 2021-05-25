@@ -7,8 +7,10 @@ import torch_geometric
 
 from torch.utils.data import Subset
 from torch_geometric.data import Batch, Data, Dataset
+from tqdm import tqdm
 from typing import Callable, Dict, List, Tuple, Union
 
+from aegnn.utils.bounding_box import crop_to_frame, is_bbox_zero
 from aegnn.utils.multiprocessing import TaskManager
 
 
@@ -32,6 +34,14 @@ class EventDataset(Dataset):
     #########################################################################################################
     # Processing ############################################################################################
     #########################################################################################################
+    # Pre-process raw files to enable more efficient loading during training/inference.
+    # The process function is called by the `torch_geometric.data.Dataset` super-class when the processed
+    # directory is empty, or when not all files that are listed as processed files can be found. This function
+    # is made to process the whole dataset, not single files, in parallel processing.
+    # Loading the data, annotations, labels, etc. is dataset specific and therefore to be defined in the
+    # sub-classes. Importantly, the functions must therefore be able to be pickled, i.e. not using dynamic
+    # types or not-shared class variables.
+    #########################################################################################################
     def read_annotations(self, raw_file: str) -> Union[np.ndarray, None]:
         return None
 
@@ -45,47 +55,27 @@ class EventDataset(Dataset):
         return [data_obj]
 
     def process(self):
-        """Pre-process raw files to enable more efficient loading during training/inference.
-
-        The process function is called by the `torch_geometric.data.Dataset` super-class when the processed
-        directory is empty, or when not all files that are listed as processed files can be found. This function
-        is made to process the whole dataset, not single files, in parallel processing.
-
-        Loading the data, annotations, labels, etc. is dataset specific and therefore to be defined in the
-        sub-classes. Importantly, the functions must therefore be able to be pickled, i.e. not using dynamic
-        types or not-shared class variables.
-        """
+        kwargs = dict(raw_dir=self.raw_dir, target_dir=self.processed_dir, load_func=self.load,
+                      pre_filter=self.pre_filter, pre_transform=self.pre_transform, img_shape=self.img_shape,
+                      get_sections=self.get_sections, build_meta_info=self.build_meta_info,
+                      read_label=self.read_label, read_annotations=self.read_annotations)
         if self.num_workers > 1:
             logging.info(f"Processing raw files with {self.num_workers} workers")
             task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(self.raw_paths))
-            process, args = task_manager.queue, [self.processing]
+            for rf in self.raw_paths:
+                task_manager.queue(self.processing, rf=rf, **kwargs)
         else:
             logging.info("Processing raw files with a single process")
-            process, args = self.processing, []
-
-        # Processing raw files either in parallel or sequentially (debug).
-        for rf in self.raw_paths:
-            process(*args, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir, load_func=self.load,
-                    pre_filter=self.pre_filter, pre_transform=self.pre_transform,
-                    get_sections=self.get_sections, build_meta_info=self.build_meta_info,
-                    read_label=self.read_label, read_annotations=self.read_annotations)
+            for rf in tqdm(self.raw_paths):
+                self.processing(rf, **kwargs)
 
     @staticmethod
     def processing(rf: str, raw_dir: str, target_dir: str,
                    load_func: Callable[[str], Data],
                    read_label: Callable[[str], str], read_annotations: Callable[[str], np.ndarray],
-                   get_sections: Callable[[Data], List[Data]],
+                   get_sections: Callable[[Data], List[Data]], img_shape: Tuple[int, int],
                    build_meta_info: Callable[[Data], Dict[str, str]],
                    pre_filter: Callable = None, pre_transform: Callable = None):
-        """Processing raw file on cuda device for object detection/recognition task, including the following steps:
-
-        1. Loading and converting the data to `Data` object.
-        2. Load additional data such as class_id, bounding box, etc.
-        3. Filtering the data out, if required.
-        4. Crop several selected windows from the data.
-        5. Perform the pre-processing transformation on each selected window.
-        6. Save the resulting objects in the `target_dir` as torch file.
-        7. Save meta information about the data object for quick access."""
         rf_wo_ext, _ = os.path.splitext(rf)
         pf = rf_wo_ext.replace(raw_dir, target_dir) + ".pt"
         pf_rel = os.path.relpath(pf, start=target_dir)
@@ -98,7 +88,11 @@ class EventDataset(Dataset):
         if (label := read_label(rf)) is not None:
             data_obj.label = label if isinstance(label, list) else [label]
         if (bbox := read_annotations(rf)) is not None:
-            data_obj.bbox = torch.tensor(bbox)
+            bbox = crop_to_frame(torch.tensor(bbox), image_shape=img_shape)
+            is_not_empty = is_bbox_zero(bbox)
+            data_obj.bbox = bbox[~is_not_empty, :]
+            if hasattr(data_obj, "label"):
+                data_obj.label = [lbl for lbl, ie in zip(data_obj.label, is_not_empty) if not ie]
 
         # Apply pre-filter and pre-transform to the data object, if defined.
         if pre_filter is not None and not pre_filter(data_obj):
@@ -126,13 +120,19 @@ class EventDataset(Dataset):
             torch.save(meta_info, pf_flat.replace(".pt", f".{i}.meta"))
 
     #########################################################################################################
-    # Meta-Information & Subset #############################################################################
+    # Data Loading ##########################################################################################
     #########################################################################################################
     @staticmethod
     def build_meta_info(data: Data) -> Dict[str, str]:
         return {"label": getattr(data, "label", None)}
 
     def get_subset(self, **kwargs) -> Subset:
+        """Get the dataset subset based on the meta information stored next to each data file
+        (see `build_meta_info`). However, while efficient in data index filtering, the subset
+        cannot change the data itself, just choose samples (-> `collate`).
+
+        :param kwargs: key-value pairs for filtering (key = meta key, value = list of contained values).
+        """
         logging.info(f"Creating subset based on filters {kwargs}")
         assert all([isinstance(v, list) for v in kwargs.values()]), "values should be lists"
         indices = []
@@ -141,6 +141,10 @@ class EventDataset(Dataset):
             meta_dict = torch.load(pf.replace(".data.pt", ".meta"))
             is_inside = True
 
+            # For each key-value pair in the filtering keys (`kwargs`), check whether the key has been
+            # stored in the files meta information. Let the file through, if
+            # a) the key is not stored in the meta file
+            # b) the values are a subset of the filter values.
             for key, values in kwargs.items():
                 p_values = meta_dict.get(key, None)
                 if p_values is None:
@@ -150,6 +154,7 @@ class EventDataset(Dataset):
                 is_inside = False
                 break
 
+        # If the file is inside the filter kwargs, add its index to the list of subset indices.
             if is_inside:
                 indices.append(i)
         return Subset(self, indices=indices)
@@ -163,10 +168,10 @@ class EventDataset(Dataset):
             data.label = [data.label[i] for i in arg_label]
             class_id = [label_dict[lbl] for lbl in data.label]
             with torch.no_grad():
-                class_id = torch.tensor(class_id, dtype=torch.long, device=data.bbox.device)
+                class_id = torch.tensor(class_id, device=data.bbox.device)
                 data.bbox = data.bbox[arg_label, :]
                 data.bbox[..., -1] = class_id
-                data.y = class_id
+                data.y = class_id.long()
 
             batch_new.append(data)
         return Batch.from_data_list(batch_new)

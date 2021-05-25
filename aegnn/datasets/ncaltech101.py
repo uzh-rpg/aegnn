@@ -5,7 +5,7 @@ import os
 import torch
 import torch_geometric
 
-from typing import Callable, List, Tuple, Union
+from typing import List, Tuple, Union
 
 from .base.event_ds import EventDataset
 from .base.event_dm import EventDataModule

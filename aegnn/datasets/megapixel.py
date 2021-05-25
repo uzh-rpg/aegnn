@@ -1,4 +1,3 @@
-import functools
 import glob
 import os
 import numpy as np
@@ -21,9 +20,11 @@ class Megapixel(EventDataModule):
 
         def read_annotations(self, raw_file: str) -> np.ndarray:
             bbox = self._load_file(raw_file).bbox
+
+            # Reset the class-id to only include car and pedestrians as labels. Bounding boxes
+            # including other classes will be deleted.
             is_pedestrian = bbox[:, -1] == 0
             is_car = np.logical_or(np.logical_or(bbox[:, -1] == 2, bbox[:, -1] == 3), bbox[:, -1] == 4)
-
             bbox[is_pedestrian, -1] = 0
             bbox[is_car, -1] = 1
             return bbox[np.logical_or(is_pedestrian, is_car), :]
