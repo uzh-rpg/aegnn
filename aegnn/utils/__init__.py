@@ -1,3 +1,4 @@
+import aegnn.utils.bounding_box
 import aegnn.utils.io
 from aegnn.utils.multiprocessing import TaskManager
 

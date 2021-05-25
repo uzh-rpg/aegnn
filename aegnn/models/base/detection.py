@@ -6,9 +6,10 @@ import pytorch_lightning.metrics.functional as pl_metrics
 
 from typing import Dict, Tuple
 
-from ..utils import bounding_box as model_utils
+from aegnn.utils.bounding_box import crop_to_frame, non_max_suppression
 from ..utils.iou import compute_iou
 from ..utils.map import compute_map
+from ..utils.yolo import yolo_grid
 
 
 class DetectionModel(pl.LightningModule):
@@ -80,7 +81,7 @@ class DetectionModel(pl.LightningModule):
                  ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Normalizes and computes the offset to the grid corner"""
         # Construct normalized, relative ground truth
-        cell_corners = model_utils.get_grid(input_shape, cell_map_shape)
+        cell_corners = yolo_grid(input_shape, cell_map_shape)
         cell_shape = input_shape / cell_map_shape
         # bounding_box[0, 0, :]: ['u', 'v', 'w', 'h', 'class_id'].  (u, v) is top left point
         # gt_bbox_center = bounding_box[:, :, :2] + bounding_box[:, :, 2:4] // 2
@@ -116,7 +117,7 @@ class DetectionModel(pl.LightningModule):
         with torch.no_grad():
             gt_bbox = getattr(batch, "bbox")
             detected_bb = self.detect(model_outputs, threshold=0.3)
-            detected_bb = model_utils.non_max_suppression(detected_bb, iou=0.6)
+            detected_bb = non_max_suppression(detected_bb, iou=0.6)
             metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bb)
 
         return metrics_logs
@@ -135,7 +136,7 @@ class DetectionModel(pl.LightningModule):
         y_rel = y_norm_rel * cell_shape[1]
         w = w_norm_sqrt ** 2 * input_shape[0]
         h = h_norm_sqrt**2 * input_shape[1]
-        cell_top_left = model_utils.get_grid(input_shape, cell_map_shape)
+        cell_top_left = yolo_grid(input_shape, cell_map_shape)
         bbox_top_left_corner = cell_top_left[None, :, :, None, :] + torch.stack([x_rel, y_rel], dim=-1)
 
         if threshold is None:
@@ -160,7 +161,8 @@ class DetectionModel(pl.LightningModule):
                              detected_top_left_corner[:, 1, None].float(), detected_w.float(), detected_h.float(),
                              pred_cls.float(), pred_cls_conf[:, None].float(), pred_conf], dim=-1)
 
-        return model_utils.crop_to_frame(det_bbox, input_shape)
+        det_bbox[:, 1:5] = crop_to_frame(det_bbox[1:5], input_shape)
+        return det_bbox
 
     ###############################################################################################
     # YOLO Loss ###################################################################################
