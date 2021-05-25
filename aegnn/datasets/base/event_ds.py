@@ -86,46 +86,44 @@ class EventDataset(Dataset):
         5. Perform the pre-processing transformation on each selected window.
         6. Save the resulting objects in the `target_dir` as torch file.
         7. Save meta information about the data object for quick access."""
-        cuda_id = torch.cuda.current_device()
+        rf_wo_ext, _ = os.path.splitext(rf)
+        pf = rf_wo_ext.replace(raw_dir, target_dir) + ".pt"
+        pf_rel = os.path.relpath(pf, start=target_dir)
+        pf_flat = os.path.join(target_dir, pf_rel.replace("/", "."))
 
-        with torch.cuda.device(cuda_id):
-            rf_wo_ext, _ = os.path.splitext(rf)
-            pf = rf_wo_ext.replace(raw_dir, target_dir) + ".pt"
-            pf_rel = os.path.relpath(pf, start=target_dir)
-            pf_flat = os.path.join(target_dir, pf_rel.replace("/", "."))
+        # Load data from raw file. If the according loaders are available, add annotation, label and class id.
+        device = torch.cuda.current_device()
+        data_obj = load_func(rf).to(device)
+        data_obj.file_id = os.path.basename(rf)
+        if (label := read_label(rf)) is not None:
+            data_obj.label = label if isinstance(label, list) else [label]
+        if (bbox := read_annotations(rf)) is not None:
+            data_obj.bbox = torch.tensor(bbox)
 
-            # Load data from raw file. If the according loaders are available, add annotation, label and class id.
-            data_obj = load_func(rf)
-            data_obj.file_id = os.path.basename(rf)
-            if (label := read_label(rf)) is not None:
-                data_obj.label = label if isinstance(label, list) else [label]
-            if (bbox := read_annotations(rf)) is not None:
-                data_obj.bbox = torch.tensor(bbox)
+        # Apply pre-filter and pre-transform to the data object, if defined.
+        if pre_filter is not None and not pre_filter(data_obj):
+            return
 
-            # Apply pre-filter and pre-transform to the data object, if defined.
-            if pre_filter is not None and not pre_filter(data_obj):
+        # Divide the loaded data into sections. Then for each section, apply the pre-transform
+        # on the graph, to afterwards store it as .pt-file.
+        assert data_obj.pos.size(1) > 2
+        do_sections = get_sections(data_obj)
+        for i, section in enumerate(do_sections):
+            if section.num_nodes == 0:
                 return
+            if pre_transform is not None:
+                section = pre_transform(section)
 
-            # Divide the loaded data into sections. Then for each section, apply the pre-transform
-            # on the graph, to afterwards store it as .pt-file.
-            assert data_obj.pos.size(1) > 2
-            do_sections = get_sections(data_obj)
-            for i, section in enumerate(do_sections):
-                if section.num_nodes == 0:
-                    return
-                if pre_transform is not None:
-                    section = pre_transform(section)
+            # Save the section data object as .pt-torch-file. For the sake of a uniform processed
+            # directory format make all output paths flat.
+            os.makedirs(os.path.dirname(pf_flat), exist_ok=True)
+            torch.save(section.to("cpu"), pf_flat.replace(".pt", f".{i}.data.pt"))
 
-                # Save the section data object as .pt-torch-file. For the sake of a uniform processed
-                # directory format make all output paths flat.
-                os.makedirs(os.path.dirname(pf_flat), exist_ok=True)
-                torch.save(section.to("cpu"), pf_flat.replace(".pt", f".{i}.data.pt"))
-
-                # For building class-dependent subsets of data, write meta-information about the
-                # data point in an additional text file, so that they can be accessed without having to
-                # load the whole file.
-                meta_info = build_meta_info(section)
-                torch.save(meta_info, pf_flat.replace(".pt", f".{i}.meta"))
+            # For building class-dependent subsets of data, write meta-information about the
+            # data point in an additional text file, so that they can be accessed without having to
+            # load the whole file.
+            meta_info = build_meta_info(section)
+            torch.save(meta_info, pf_flat.replace(".pt", f".{i}.meta"))
 
     #########################################################################################################
     # Meta-Information & Subset #############################################################################
