@@ -1,5 +1,6 @@
 from aegnn.datasets.base.event_dm import EventDataModule
 from aegnn.datasets.ncaltech101 import NCaltech101
+from aegnn.datasets.megapixel import Megapixel
 
 ################################################################################################
 # Access functions #############################################################################
@@ -15,7 +16,7 @@ import aegnn.utils.transforms
 
 def by_name(name: str, **kwargs) -> Union[EventDataModule, None]:
     from aegnn.utils.io import select_by_name
-    return select_by_name([NCaltech101], name=name, **kwargs)
+    return select_by_name([NCaltech101, Megapixel], name=name, **kwargs)
 
 
 def from_args(args: argparse.Namespace) -> Union[EventDataModule, None]:

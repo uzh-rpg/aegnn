@@ -67,8 +67,8 @@ class EventDataset(Dataset):
         for rf in self.raw_paths:
             process(*args, rf=rf, raw_dir=self.raw_dir, target_dir=self.processed_dir, load_func=self.load,
                     pre_filter=self.pre_filter, pre_transform=self.pre_transform,
-                    get_sections=self.get_sections, build_meta_info=self.build_meta_info, read_label=self.read_label,
-                    read_annotations=self.read_annotations, read_class_id=self.read_class_id)
+                    get_sections=self.get_sections, build_meta_info=self.build_meta_info,
+                    read_label=self.read_label, read_annotations=self.read_annotations)
 
     @staticmethod
     def processing(rf: str, raw_dir: str, target_dir: str,

@@ -30,13 +30,15 @@ class Megapixel(EventDataModule):
             return bbox
 
         def read_label(self, raw_file: str) -> Union[str, List[str], None]:
-            class_id = self.read_annotations(raw_file)[:, -1]
+            class_id = self.read_annotations(raw_file)[:, -1].tolist()
             label_dict = {0: "pedestrian", 1: "car"}
-            return label_dict.get(class_id, None)
+            return [label_dict.get(cid, None) for cid in class_id]
 
         def load(self, raw_file: str) -> Data:
             data = self._load_file(raw_file)
-            return Data(x=data.x.float(), pos=data.pos.float())
+            x = torch.from_numpy(data.x).float()
+            pos = torch.from_numpy(data.pos).float()
+            return Data(x=x, pos=pos)
 
         @functools.lru_cache(maxsize=10)
         def _load_file(self, f_path: str):
