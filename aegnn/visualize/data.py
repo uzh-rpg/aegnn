@@ -12,21 +12,18 @@ from .utils.title import make_title
 
 
 def event_histogram(data: torch_geometric.data.Data, img_shape: Tuple[int, int] = None, title: str = None,
-                    transpose: bool = True, max_count: int = 1, bbox: torch.Tensor = None, ax: plt.Axes = None):
+                    max_count: int = 1, bbox: torch.Tensor = None, ax: plt.Axes = None):
     """Plot event histogram by stacking all events with the same pixel coordinates over all times.
 
     :param data: sample graph object (pos).
     :param img_shape: image shape in pixel (default = None => inferred from max-xy-coordinate).
     :param title: image title, default = image class.
-    :param transpose: transpose histogram image (default = True).
     :param max_count: maximum count per bin to reject outliers (default = 100, -1 => no outlier rejection).
     :param bbox: bounding boxes to draw additional to data-contained annotation
                  (batch_i, (upper left corner -> u, v), width, height, class_idx, class_conf, prediction_conf)
     :param ax: matplotlib axes to draw in.
     """
     hist = compute_histogram(data.pos[:, :2].cpu().numpy(), img_shape=img_shape, max_count=max_count)
-    if transpose:
-        hist = hist.T
     return image(hist, title, bbox, bbox_gt=getattr(data, "bbox", None), labels_gt=getattr(data, "label", None), ax=ax)
 
 
@@ -48,7 +45,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = None, bbox: torch.T
     title = make_title(title, default=None)
 
     img = np.pad(img, pad_width=padding)
-    ax.imshow(img.T)
+    ax.imshow(img)
     if title is not None:
         ax.set_title(title)
     ax.set_axis_off()

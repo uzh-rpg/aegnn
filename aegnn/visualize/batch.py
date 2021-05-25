@@ -9,14 +9,13 @@ from .data import event_histogram
 
 
 def bbox(batch: torch_geometric.data.Batch, predictions: torch.Tensor = None, titles: List[str] = None,
-         transpose: bool = True, max_plots: int = 36, fig_size: int = 2):
+         max_plots: int = 36, fig_size: int = 2):
     """Plot the event graphs stored in the batch (or some of them) as histograms and draw the ground-truth
     detection bounding box(es) above them. If available, the predicted bounding boxes are drawn as well.
 
     :param batch: batch to draw/sample examples from.
     :param predictions: detected bounding boxes, default = None.
     :param titles: image titles, default = None, i.e. image class is used.
-    :param transpose: transpose histogram image (default = True).
     :param max_plots: maximal number of plots (default = 36), should have an integer square root.
     :param fig_size: figure size = number of plots per axis * fig_size (default = 2).
     """
@@ -43,5 +42,5 @@ def bbox(batch: torch_geometric.data.Batch, predictions: torch.Tensor = None, ti
 
         xax = iax // ax_size
         yax = iax % ax_size
-        ax[xax, yax] = event_histogram(sample, bbox=bbox_i, title=title_i, transpose=transpose, ax=ax[xax, yax])
+        ax[xax, yax] = event_histogram(sample, bbox=bbox_i, title=title_i, ax=ax[xax, yax])
     plt.show()
