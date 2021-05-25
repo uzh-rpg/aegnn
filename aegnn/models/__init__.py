@@ -1,15 +1,14 @@
-import pytorch_lightning
-
 import aegnn.models.base
 import aegnn.models.utils
 
 # Object recognition models.
 from aegnn.models.nvs import NVS
-from aegnn.models.rnvs import RNVS
 
 # Object detection models (YOLO).
 from aegnn.models.nvsd import NVSD
 from aegnn.models.baseline.cnld import CNLD
+from aegnn.models.baseline.rnld import RNLD
+from aegnn.models.baseline.yolov4 import YoloV4
 
 ################################################################################################
 # Access functions #############################################################################
@@ -20,7 +19,7 @@ import typing
 
 def by_name(name: str, **kwargs) -> typing.Union[pl.LightningModule, None]:
     from aegnn.utils.io import select_by_name
-    choices = [NVS, NVSD, CNLD, RNVS]
+    choices = [NVS, NVSD, CNLD, RNLD, YoloV4]
     return select_by_name(choices, name=name, **kwargs)
 
 
