@@ -73,9 +73,9 @@ class DetectionModel(pl.LightningModule):
         w_norm_sqrt = model_output[..., nr_bbox*2:nr_bbox*3]  # Height
         h_norm_sqrt = model_output[..., nr_bbox*3:nr_bbox*4]  # Width
         y_confidence = torch.sigmoid(model_output[..., nr_bbox * 4:nr_bbox * 5])  # Object Confidence
-        y_classes = model_output[..., nr_bbox * 5:]  # Class Score
+        y_class_scores = model_output[..., nr_bbox * 5:]  # Class Score
 
-        return x_norm_rel, y_norm_rel, w_norm_sqrt, h_norm_sqrt, y_confidence, y_classes
+        return x_norm_rel, y_norm_rel, w_norm_sqrt, h_norm_sqrt, y_confidence, y_class_scores
 
     @staticmethod
     def parse_gt(bounding_box: torch.Tensor, input_shape: torch.Tensor, cell_map_shape: torch.Tensor

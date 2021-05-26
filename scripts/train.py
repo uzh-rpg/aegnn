@@ -27,7 +27,7 @@ if __name__ == '__main__':
     model = aegnn.models.by_name(args.model, num_classes=dm.num_classes, img_shape=dm.img_shape)
     project_name = f"aegnn-{args.dataset}-{aegnn.models.get_type(model)}"
     logger = pl.loggers.WandbLogger(project=project_name, save_dir=log_dir, settings=log_settings, sync_step=True)
-    if args.train.log_gradients:
+    if args.log_gradients:
         logger.watch(model, log="gradients")  # gradients plot every 100 training batches
 
     callbacks = [
@@ -44,13 +44,10 @@ if __name__ == '__main__':
     trainer_kwargs["gpus"] = [args.gpu] if args.gpu is not None else None
     trainer_kwargs["profiler"] = args.profile
     trainer_kwargs["precision"] = 16 if args.gpu is not None else 32
-    trainer_kwargs["max_epochs"] = args.train.max_epochs
-    trainer_kwargs["overfit_batches"] = args.train.overfit_batches
     trainer_kwargs["weights_summary"] = "full"
-    trainer_kwargs["gradient_clip_val"] = args.train.gradient_clipping
-    trainer_kwargs["track_grad_norm"] = 2 if args.train.log_gradients else -1
-    trainer_kwargs["log_every_n_steps"] = args.train.log_steps
     trainer_kwargs["accelerator"] = None
+    trainer_kwargs["track_grad_norm"] = 2 if args.log_gradients else -1
+    trainer_kwargs.update(vars(args.train))
 
     trainer = pl.Trainer(logger=logger, callbacks=callbacks, **trainer_kwargs)
     trainer.fit(model, datamodule=dm)

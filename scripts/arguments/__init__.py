@@ -26,10 +26,10 @@ def add_trainer_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     group = parser.add_argument_group("train")
     group.add_argument("--train.max-epochs", action="store", default=150, type=int)
     group.add_argument("--train.overfit-batches", action="store", default=0.0, type=int)
-    group.add_argument("--train.log-gradients", action="store_true")
-    group.add_argument("--train.log-steps", action="store", default=10, type=int)
-    group.add_argument("--train.gradient-clipping", action="store", default=0.0, type=float)
+    group.add_argument("--train.log-every-n-steps", action="store", default=10, type=int)
+    group.add_argument("--train.gradient_clip_val", action="store", default=0.0, type=float)
 
+    group.add_argument("--log-gradients", action="store_true")
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--gpu", action="store", default=None, type=int)
 

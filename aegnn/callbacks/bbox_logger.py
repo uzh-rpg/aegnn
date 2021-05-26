@@ -10,7 +10,7 @@ from aegnn.visualize.utils.histogram import compute_histogram
 
 class BBoxLogger(pl.callbacks.base.Callback):
 
-    def __init__(self, classes: List[str], max_num_images: int = 16):
+    def __init__(self, classes: List[str], max_num_images: int = 8):
         self.classes = np.array(classes)
         self._max_num_images = max_num_images
 
