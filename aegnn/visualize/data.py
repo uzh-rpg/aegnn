@@ -45,7 +45,7 @@ def image(img: Union[torch.Tensor, np.ndarray], title: str = None, bbox: torch.T
     title = make_title(title, default=None)
 
     img = np.pad(img, pad_width=padding)
-    ax.imshow(img)
+    ax.imshow(img.T)
     if title is not None:
         ax.set_title(title)
     ax.set_axis_off()

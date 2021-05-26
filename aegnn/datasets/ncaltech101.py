@@ -37,9 +37,9 @@ class NCaltech101(EventDataModule):
             # often start outside of the frame (negative corner coordinates). However, the shape turns
             # out to be the shape of the bbox starting at the image's frame.
             bbox = np.array([
-                annotations[1], annotations[0],  # upper-left corner
-                annotations[5] - annotations[1],  # width
-                annotations[2] - annotations[0],  # height
+                annotations[0], annotations[1],  # upper-left corner
+                annotations[2] - annotations[0],  # width
+                annotations[5] - annotations[1],  # height
                 class_id
             ])
             bbox[:2] = np.maximum(bbox[:2], 0)

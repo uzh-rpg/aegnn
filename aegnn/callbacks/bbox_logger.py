@@ -10,7 +10,7 @@ from aegnn.visualize.utils.histogram import compute_histogram
 
 class BBoxLogger(pl.callbacks.base.Callback):
 
-    def __init__(self, classes: List[str], max_num_images: int = 20):
+    def __init__(self, classes: List[str], max_num_images: int = 16):
         self.classes = np.array(classes)
         self._max_num_images = max_num_images
 
@@ -43,7 +43,7 @@ class BBoxLogger(pl.callbacks.base.Callback):
         images = []
         for i, data in enumerate(batch.to_data_list()):
             hist_image = compute_histogram(data.pos.cpu().numpy(), img_shape=img_shape, max_count=1)
-            images.append(hist_image)
+            images.append(hist_image.T)
 
         p_bbox, p_label = bbox[:, 1:5], bbox[:, 5]
         t_label = batch.y
