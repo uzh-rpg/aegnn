@@ -19,7 +19,7 @@ class NCaltech101(EventDataModule):
             """Required by `torch_geometric.data.Dataset` in order to start processing."""
             super().process()
 
-        def read_annotations(self, raw_file: str) -> np.ndarray:
+        def read_annotations(self, raw_file: str) -> Union[np.ndarray, None]:
             annotations_dir = os.path.join(os.environ["AEGNN_DATA_DIR"], "ncaltech101", "annotations")
             raw_file_rel = os.path.relpath(raw_file, start=self.raw_dir).replace("image", "annotation")
 
@@ -30,12 +30,20 @@ class NCaltech101(EventDataModule):
 
             label = self.read_label(raw_file)
             class_id = self.map_label(label)
-            return np.array([
+            if class_id is None:
+                return None
+
+            # Create bounding box from corner, shape and label variables. NCaltech101 bounding boxes
+            # often start outside of the frame (negative corner coordinates). However, the shape turns
+            # out to be the shape of the bbox starting at the image's frame.
+            bbox = np.array([
                 annotations[1], annotations[0],  # upper-left corner
                 annotations[5] - annotations[1],  # width
                 annotations[2] - annotations[0],  # height
                 class_id
-            ]).reshape((1, 1, -1))
+            ])
+            bbox[:2] = np.maximum(bbox[:2], 0)
+            return bbox.reshape((1, 1, -1))
 
         def read_label(self, raw_file: str) -> Union[str, List[str], None]:
             return raw_file.split("/")[-2]
@@ -95,7 +103,7 @@ class NCaltech101(EventDataModule):
         #########################################################################################################
         @property
         def img_shape(self) -> Tuple[int, int]:
-            return 240, 180
+            return 240, 240
 
     #########################################################################################################
     # Data Module ###########################################################################################

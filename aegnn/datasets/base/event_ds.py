@@ -82,13 +82,13 @@ class EventDataset(Dataset):
         pf_flat = os.path.join(target_dir, pf_rel.replace("/", "."))
 
         # Load data from raw file. If the according loaders are available, add annotation, label and class id.
-        device = torch.cuda.current_device()
+        device = torch.device(torch.cuda.current_device())
         data_obj = load_func(rf).to(device)
         data_obj.file_id = os.path.basename(rf)
         if (label := read_label(rf)) is not None:
             data_obj.label = label if isinstance(label, list) else [label]
         if (bbox := read_annotations(rf)) is not None:
-            bbox = crop_to_frame(torch.tensor(bbox), image_shape=img_shape)
+            bbox = crop_to_frame(torch.tensor(bbox, device=device), image_shape=img_shape)
             is_not_empty = is_bbox_zero(bbox)
             data_obj.bbox = bbox[~is_not_empty, :].long()
             if hasattr(data_obj, "label"):
