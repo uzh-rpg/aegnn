@@ -14,15 +14,19 @@ def compute_map(gt_bbox: torch.Tensor, detected_bbox: torch.Tensor) -> float:
     """
     gt_dict = __parse_gt(gt_bbox)
     detected_dict = __parse_detections(detected_bbox)
+    print(gt_dict)
+    print(detected_dict)
     return calculate_map_range(gt_dict, detected_dict, 0.05, 0.95, 0.05)
 
 
 def __parse_gt(gt_bbox: torch.Tensor) -> Dict[str, np.ndarray]:
     bbox = gt_bbox.detach().cpu().numpy()
     bbox = bbox.reshape(-1, 5)
-    return {"boxes": bbox[:, 0:4], "labels": bbox[:, -1]}
+    boxes = np.stack([bbox[:, 0], bbox[:, 1], bbox[:, 0] + bbox[:, 2], bbox[:, 1] + bbox[:, 3]], axis=1)
+    return {"boxes": boxes, "labels": bbox[:, -1]}
 
 
 def __parse_detections(detected_bbox: torch.Tensor) -> Dict[str, np.ndarray]:
     bbox = detected_bbox.detach().cpu().numpy()
-    return {"boxes": bbox[:, 1:5], "labels": bbox[:, 5], "scores": bbox[:, 6]}
+    boxes = np.stack([bbox[:, 1], bbox[:, 2], bbox[:, 1] + bbox[:, 3], bbox[:, 2] + bbox[:, 4]], axis=1)
+    return {"boxes": boxes, "labels": bbox[:, 5], "scores": bbox[:, 6]}
