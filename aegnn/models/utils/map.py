@@ -14,8 +14,6 @@ def compute_map(gt_bbox: torch.Tensor, detected_bbox: torch.Tensor) -> float:
     """
     gt_dict = __parse_gt(gt_bbox)
     detected_dict = __parse_detections(detected_bbox)
-    print(gt_dict)
-    print(detected_dict)
     return calculate_map_range(gt_dict, detected_dict, 0.05, 0.95, 0.05)
 
 

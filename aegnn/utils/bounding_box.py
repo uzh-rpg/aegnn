@@ -9,20 +9,20 @@ def crop_to_frame(bbox: torch.Tensor, image_shape: Union[torch.Tensor, Tuple[int
     :param bbox: bounding box to check (x, y, width, height).
     :param image_shape: image dimensions (width, height).
     """
-    array_width = torch.ones_like(bbox[:, 0], device=bbox.device) * (image_shape[0] - 1)
-    array_height = torch.ones_like(bbox[:, 1], device=bbox.device) * (image_shape[1] - 1)
-    wh = torch.stack([array_width, array_height], dim=1)
+    array_width = torch.ones_like(bbox[..., 0], device=bbox.device) * (image_shape[0] - 1)
+    array_height = torch.ones_like(bbox[..., 1], device=bbox.device) * (image_shape[1] - 1)
+    wh = torch.stack([array_width, array_height], dim=-1)
 
-    xy_delta_min = torch.min(bbox[:, :2], torch.zeros_like(bbox[:, :2], device=bbox.device))
-    bbox[:, 0:2] = bbox[:, 0:2] - xy_delta_min
-    bbox[:, 2:4] = bbox[:, 2:4] + xy_delta_min
+    xy_delta_min = torch.min(bbox[..., :2], torch.zeros_like(bbox[..., :2], device=bbox.device))
+    bbox[..., 0:2] = bbox[..., 0:2] - xy_delta_min
+    bbox[..., 2:4] = bbox[..., 2:4] + xy_delta_min
 
-    xy_delta_max = torch.min(wh - bbox[:, :2], torch.zeros_like(bbox[:, :2], device=bbox.device))
-    bbox[:, 0:2] = bbox[:, 0:2] + xy_delta_max
-    bbox[:, 2:4] = bbox[:, 2:4] - xy_delta_max
+    xy_delta_max = torch.min(wh - bbox[..., :2], torch.zeros_like(bbox[..., :2], device=bbox.device))
+    bbox[..., 0:2] = bbox[..., 0:2] + xy_delta_max
+    bbox[..., 2:4] = bbox[..., 2:4] - xy_delta_max
 
-    bbox[:, 2] = torch.min(bbox[:, 2], array_width - bbox[:, 0])
-    bbox[:, 3] = torch.min(bbox[:, 3], array_height - bbox[:, 1])
+    bbox[..., 2] = torch.min(bbox[..., 2], array_width - bbox[..., 0])
+    bbox[..., 3] = torch.min(bbox[..., 3], array_height - bbox[..., 1])
     return bbox
 
 
@@ -33,7 +33,7 @@ def is_bbox_zero(bbox: torch.Tensor, limit: float = 10) -> torch.Tensor:
     :param bbox: bounding box to check (x, y, width, height).
     :param limit: minimal size in each dimension to not be 'zero' (default = 10 pixels).
     """
-    return torch.logical_or(bbox[:, 2] < limit, bbox[:, 3] < limit)
+    return torch.logical_or(bbox[..., 2] < limit, bbox[..., 3] < limit)
 
 
 def non_max_suppression(detected_bbox: torch.Tensor, iou: float = 0.6) -> torch.Tensor:
