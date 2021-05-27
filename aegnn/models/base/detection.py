@@ -23,8 +23,8 @@ class DetectionModel(pl.LightningModule):
         super().__init__()
         self.num_classes = num_classes
         self.num_bounding_boxes = num_bounding_boxes
-        # self.cell_map_shape = (7, 5)
-        self.cell_map_shape = (1, 1)
+        self.cell_map_shape = (4, 3)
+        # self.cell_map_shape = (1, 1)
         self.input_shape = torch.tensor(img_shape, device=self.device)
 
         self.num_outputs_per_cell = num_classes + num_bounding_boxes * 5  # (x, y, width, height, confidence)
@@ -80,29 +80,24 @@ class DetectionModel(pl.LightningModule):
     @staticmethod
     def parse_gt(bounding_box: torch.Tensor, input_shape: torch.Tensor, cell_map_shape: torch.Tensor
                  ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Normalizes and computes the offset to the grid corner"""
-        # Construct normalized, relative ground truth
         cell_corners = yolo_grid(input_shape, cell_map_shape)
         cell_shape = input_shape / cell_map_shape
-        # bounding_box[0, 0, :]: ['u', 'v', 'w', 'h', 'class_id'].  (u, v) is top left point
-        # gt_bbox_center = bounding_box[:, :, :2] + bounding_box[:, :, 2:4] // 2
-        gt_bbox_center = bounding_box[:, :, :2]
-        # (u, v) -> (x, y)
-        gt_cell_corner_offset_x = gt_bbox_center[:, :, 0, None] - cell_corners[None, None, :, 0, 1]
-        gt_cell_corner_offset_x[gt_cell_corner_offset_x < 0] = 0
+        gt_bbox_corner = bounding_box[:, :, :2]
+
+        gt_cell_corner_offset_x = gt_bbox_corner[:, :, 0, None] - cell_corners[None, None, :, 0, 0]
+        gt_cell_corner_offset_x[gt_cell_corner_offset_x < 0] = 9999999
         gt_cell_corner_offset_x, gt_cell_x = torch.min(gt_cell_corner_offset_x, dim=-1)
 
-        gt_cell_corner_offset_y = gt_bbox_center[:, :, 1, None] - cell_corners[None, None, :, 0, 0]
-        gt_cell_corner_offset_y[gt_cell_corner_offset_y < 0] = 0
+        gt_cell_corner_offset_y = gt_bbox_corner[:, :, 1, None] - cell_corners[None, None, 0, :, 1]
+        gt_cell_corner_offset_y[gt_cell_corner_offset_y < 0] = 9999999
         gt_cell_corner_offset_y, gt_cell_y = torch.min(gt_cell_corner_offset_y, dim=-1)
 
         gt_cell_corner_offset = torch.stack([gt_cell_corner_offset_x, gt_cell_corner_offset_y], dim=-1)
         gt_cell_corner_offset_norm = gt_cell_corner_offset / cell_shape[None, None, :].float()
 
-        # (width, height) -> (height, width)
         gt_bbox_shape = torch.stack([bounding_box[:, :, 2], bounding_box[:, :, 3]], dim=-1)
         gt_bbox_shape_norm_sqrt = torch.sqrt(gt_bbox_shape / input_shape.float())
-        return gt_cell_corner_offset_norm, gt_bbox_shape_norm_sqrt, gt_cell_y, gt_cell_x
+        return gt_cell_corner_offset_norm, gt_bbox_shape_norm_sqrt, gt_cell_x, gt_cell_y
 
     ###############################################################################################
     # Metrics #####################################################################################
@@ -111,15 +106,15 @@ class DetectionModel(pl.LightningModule):
                  ) -> Dict[str, torch.Tensor]:
         metrics_logs = {}
 
-        detected_bb = self.detect(model_outputs, threshold=0.0)
-        dbb_batch_idx = detected_bb[:, 0].long()
-        metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(detected_bb[:, 5].long(), target=batch.y[dbb_batch_idx])
+        detected_bbox = self.detect(model_outputs, threshold=0.0)
+        dbb_batch_idx = detected_bbox[:, 0].long()
+        metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(detected_bbox[:, 5].long(), target=batch.y[dbb_batch_idx])
 
         with torch.no_grad():
             gt_bbox = getattr(batch, "bbox")
-            detected_bb = self.detect(model_outputs, threshold=0.3)
-            detected_bb = non_max_suppression(detected_bb, iou=0.6)
-            metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bb)
+            detected_bbox = self.detect(model_outputs, threshold=0.3)
+            detected_bbox = non_max_suppression(detected_bbox, iou=0.6)
+            metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bbox)
 
         return metrics_logs
 

@@ -4,8 +4,8 @@ import torch
 def compute_iou(prediction_bbox: torch.Tensor, gt_bbox: torch.Tensor) -> torch.Tensor:
     """Computes for bounding boxes in bbox_detection the IoU with the gt_bbox.
 
-    :param prediction_bbox: [batch_size, bounding_box_to_compare, nr_pred_bbox, 4]
-    :param gt_bbox: [batch_size, bounding_box_to_compare, 4]
+    :param prediction_bbox: [batch_size, gt_bbox_idx, nr_pred_bbox, 4]
+    :param gt_bbox: [batch_size, gt_bbox_idx, 4]
     """
     prediction_bbox = torch.clamp(prediction_bbox, min=0).float()
     gt_bbox = torch.clamp(gt_bbox, min=0).float()

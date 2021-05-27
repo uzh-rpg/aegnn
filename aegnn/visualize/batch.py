@@ -42,5 +42,6 @@ def bbox(batch: torch_geometric.data.Batch, predictions: torch.Tensor = None, ti
 
         xax = iax // ax_size
         yax = iax % ax_size
-        ax[xax, yax] = event_histogram(sample, bbox=bbox_i, title=title_i, ax=ax[xax, yax])
+        axis = ax[xax, yax] if batch.num_graphs > 1 else ax
+        event_histogram(sample, bbox=bbox_i, title=title_i, ax=axis)
     plt.show()
