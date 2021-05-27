@@ -9,6 +9,8 @@ class LogLogger(LightningLoggerBase):
 
     def __init__(self, filter_key: Callable = None, name: str = "logger"):
         super().__init__()
+        logging.basicConfig(format='[%(asctime)s %(levelname)s]{%(filename)s:%(lineno)d} %(message)s',
+                            datefmt='%H:%M:%S', level=logging.INFO)
         self._name = name
         self._filter_key = filter_key
 

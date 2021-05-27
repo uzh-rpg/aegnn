@@ -5,7 +5,6 @@ from nestargs.parser import NestedArgumentParser
 def add_dataset_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     parser.add_argument("--dataset", action="store", default="ncaltech101", type=str)
     parser.add_argument("--seed", action="store", default=12345, type=int)
-    parser.add_argument("--debug", action="store_true")
 
     group = parser.add_argument_group("data")
     group.add_argument("--data.batch-size", action="store", default=64, type=int)
@@ -29,9 +28,11 @@ def add_trainer_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     group.add_argument("--train.log-every-n-steps", action="store", default=10, type=int)
     group.add_argument("--train.gradient_clip_val", action="store", default=0.0, type=float)
 
-    group.add_argument("--log-gradients", action="store_true")
+    parser.add_argument("--log-gradients", action="store_true")
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument("--debug", action="store_true")
     parser.add_argument("--gpu", action="store", default=None, type=int)
+    parser.add_argument("--log-logging", action="store_true")
 
     return parser
 

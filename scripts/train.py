@@ -26,9 +26,12 @@ if __name__ == '__main__':
     dm = aegnn.datasets.from_args(args)
     model = aegnn.models.by_name(args.model, num_classes=dm.num_classes, img_shape=dm.img_shape)
     project_name = f"aegnn-{args.dataset}-{aegnn.models.get_type(model)}"
-    logger = pl.loggers.WandbLogger(project=project_name, save_dir=log_dir, settings=log_settings, sync_step=True)
-    if args.log_gradients:
-        logger.watch(model, log="gradients")  # gradients plot every 100 training batches
+    if not args.log_logging:
+        logger = pl.loggers.WandbLogger(project=project_name, save_dir=log_dir, settings=log_settings, sync_step=True)
+        if args.log_gradients:
+            logger.watch(model, log="gradients")  # gradients plot every 100 training batches
+    else:
+        logger = aegnn.utils.loggers.LogLogger()
 
     callbacks = [
         aegnn.callbacks.BBoxLogger(classes=dm.classes),
