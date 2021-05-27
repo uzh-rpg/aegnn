@@ -1,3 +1,4 @@
+import logging
 import nestargs
 import os
 import pytorch_lightning as pl
@@ -16,7 +17,9 @@ if __name__ == '__main__':
     parser = arguments.add_trainer_arguments(parser)
     args = parser.parse_args()
 
-    torch_geometric.set_debug(args.debug)
+    if args.debug:
+        torch_geometric.set_debug(True)
+        logging.basicConfig(level=logging.DEBUG)
     pl.seed_everything(args.seed)
     arguments.check_arguments(args)
 
