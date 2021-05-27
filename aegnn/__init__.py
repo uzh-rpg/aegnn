@@ -10,11 +10,6 @@ except ModuleNotFoundError:
     import logging
     logging.warning("AEGNN Module imported without visualization tools")
 
-# Set log level and format for the whole library.
-import logging
-logging.basicConfig(format='[%(asctime)s %(levelname)s]{%(filename)s:%(lineno)d} %(message)s',
-                    datefmt='%H:%M:%S', level=logging.INFO)
-
 # Setup default values for environment variables, if they have not been defined already.
 # Consequently, when another system is used, other than the default system, the env variable
 # can simply be changed prior to importing the `aegnn` module.

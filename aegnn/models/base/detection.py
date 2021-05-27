@@ -106,14 +106,15 @@ class DetectionModel(pl.LightningModule):
                  ) -> Dict[str, torch.Tensor]:
         metrics_logs = {}
 
-        detected_bbox = self.detect(model_outputs, threshold=0.0)
-        dbb_batch_idx = detected_bbox[:, 0].long()
-        metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(detected_bbox[:, 5].long(), target=batch.y[dbb_batch_idx])
-
         with torch.no_grad():
-            gt_bbox = getattr(batch, "bbox")
             detected_bbox = self.detect(model_outputs, threshold=0.3)
             detected_bbox = non_max_suppression(detected_bbox, iou=0.6)
+            gt_bbox = getattr(batch, "bbox")
+
+            if detected_bbox.numel() > 0:
+                dbb_batch_idx = detected_bbox[:, 0].long()
+                metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(preds=detected_bbox[:, 5].long(),
+                                                                        target=batch.y[dbb_batch_idx])
             metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bbox)
 
         return metrics_logs
