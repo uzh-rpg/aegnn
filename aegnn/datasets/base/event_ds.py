@@ -133,7 +133,7 @@ class EventDataset(Dataset):
 
         :param kwargs: key-value pairs for filtering (key = meta key, value = list of contained values).
         """
-        logging.info(f"Creating subset based on filters {kwargs}")
+        logging.debug(f"Creating subset based on filters {kwargs}")
         assert all([isinstance(v, list) for v in kwargs.values()]), "values should be lists"
         indices = []
 
@@ -165,11 +165,13 @@ class EventDataset(Dataset):
 
         for data in batch:
             arg_label = [i for i, lbl in enumerate(data.label) if lbl in self.classes]
+            if data.bbox.shape[0] > 1:
+                arg_label = [np.argmax(data.bbox[..., 2] * data.bbox[..., 3]).tolist()]
             data.label = [data.label[i] for i in arg_label]
             class_id = [label_dict[lbl] for lbl in data.label]
             with torch.no_grad():
                 class_id = torch.tensor(class_id, device=data.bbox.device)
-                data.bbox = data.bbox[arg_label, :]
+                data.bbox = data.bbox[arg_label, :].view(-1, 1, 5)
                 data.bbox[..., -1] = class_id
                 data.y = class_id.long()
 

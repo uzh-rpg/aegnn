@@ -59,7 +59,10 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
     bbox_to_idx = read_bbox_to_id(f_path)
 
     num_events = x.size
-    for bbox_idx, idx in bbox_to_idx:
+    for i, (bbox_idx, idx) in enumerate(bbox_to_idx):
+        if i > 20:
+            continue
+
         ws = max(idx - window_size_bd, 0)
         we = min(idx + window_size_fd, num_events - 1)
 
@@ -72,7 +75,7 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
         os.makedirs(output_directory, exist_ok=True)
         pf = os.path.join(output_directory, file_name + f".{bbox_idx}.pt")
 
-        data = Data(x=w_p, y=w_bbox[:, -1], pos=w_pos, bbox=w_bbox)
+        data = Data(x=w_p, pos=w_pos, bbox=w_bbox)
         torch.save(data, pf)
 
 
@@ -82,7 +85,7 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
 if __name__ == '__main__':
     args = parse_args()
     dataset_dir = os.environ["AEGNN_DATASET_DIR"]
-    ds_tuples = [("train", "training", 8), ("val", "validation", 2)]
+    ds_tuples = [("train", "training", 1), ("val", "validation", 1)]
 
     file_dict = {}
     for ds_type, ds_name, max_samples in ds_tuples:
@@ -92,8 +95,9 @@ if __name__ == '__main__':
         file_dict[ds_name] = h5_files[:max_samples]
 
     num_files = sum([len(files) for files in file_dict.values()])
-    task_manager = TaskManager(args.num_workers, queue_size=args.num_workers, total=num_files)
+    # task_manager = TaskManager(args.num_workers, queue_size=args.num_workers, total=num_files)
     for ds_name, ds_files in file_dict.items():
         logging.info(f"Processing {ds_name} dataset")
-        for f in ds_files:
-            task_manager.queue(process, f_path=f, ds=ds_name, **vars(args))
+        for f in tqdm(ds_files):
+            # task_manager.queue(process, f_path=f, ds=ds_name, **vars(args))
+            process(f_path=f, ds=ds_name, **vars(args))

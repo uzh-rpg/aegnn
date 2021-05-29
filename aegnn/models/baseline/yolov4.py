@@ -3,9 +3,11 @@ import torch_geometric
 
 from torch.nn import Linear
 from torch.nn.functional import leaky_relu
+from torch_geometric.data import Batch
 from torch_geometric.nn.conv import GCNConv
 from torch_geometric.nn.norm import BatchNorm
-from torch_geometric.nn.pool import max_pool_x, voxel_grid
+from torch_geometric.nn.pool import max_pool, max_pool_x, voxel_grid
+from torch_geometric.transforms import Cartesian
 from typing import Tuple
 
 from ..base import DetectionModel
@@ -26,6 +28,8 @@ class YoloV4(DetectionModel):
         self.conv43 = GCNConv(32, out_channels=32)
 
         self.conv5 = GCNConv(64, out_channels=64)
+        # self.conv6 = GCNConv(64, out_channels=64)
+        # self.norm6 = BatchNorm(in_channels=64)
 
         self.fc1 = Linear(64 * 16, out_features=self.num_outputs * 2)
         self.fc2 = Linear(self.num_outputs * 2, out_features=self.num_outputs)
@@ -47,6 +51,15 @@ class YoloV4(DetectionModel):
 
         data.x = torch.cat([x_sc_outer, data.x], dim=-1)
         data.x = leaky_relu(self.conv5(data.x, data.edge_index))
+
+        # grid_size = self.input_shape // 2
+        # cluster = voxel_grid(data.pos[:, :2], batch=data.batch, size=grid_size)
+        # data: Batch = max_pool(cluster, data=data, transform=Cartesian(cat=False))
+        #
+        # x_sc_outer = data.x.clone()
+        # data.x = leaky_relu(self.conv6(data.x, data.edge_index))
+        # data.x = self.norm6(data.x)
+        # data.x = data.x + x_sc_outer
 
         grid_size = self.input_shape // 4
         cluster = voxel_grid(data.pos, data.batch, size=grid_size)
