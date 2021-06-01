@@ -9,6 +9,7 @@ from aegnn.models.nvsd import NVSD
 from aegnn.models.baseline.cnld import CNLD
 from aegnn.models.baseline.rnld import RNLD
 from aegnn.models.baseline.yolov4 import YoloV4
+from aegnn.models.baseline.asynet import AsyNet
 
 ################################################################################################
 # Access functions #############################################################################
@@ -19,7 +20,7 @@ import typing
 
 def by_name(name: str, **kwargs) -> typing.Union[pl.LightningModule, None]:
     from aegnn.utils.io import select_by_name
-    choices = [NVS, NVSD, CNLD, RNLD, YoloV4]
+    choices = [NVS, NVSD, CNLD, RNLD, YoloV4, AsyNet]
     return select_by_name(choices, name=name, **kwargs)
 
 
