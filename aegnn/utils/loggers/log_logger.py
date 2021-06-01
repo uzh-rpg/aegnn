@@ -26,12 +26,7 @@ class LogLogger(LightningLoggerBase):
         if len(metrics) > 0:
             logging.info(f"{metrics} @ step = {step}")
 
-    def log_graph(self, model: LightningModule, input_array=None) -> None:
-        print("Logging graph")
-        pass
-
     def log_hyperparams(self, params: argparse.Namespace):
-        logging.warning("HYPERS!!!")
         logging.info(params)
 
     @property

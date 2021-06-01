@@ -89,7 +89,7 @@ class AsyConvModule(AsyModule):
             phi = self.__module.message(self, x_j, edge_attr=edge_attr)
         else:
             x_j = torch.matmul(x_j, self.weight)
-            phi = self.__module.message(self, x_j, edge_weight=None)
+            phi = self.__module.message(self, x_j)
 
         y_update = self.__module.aggregate(self, phi, index=edge_index[1, :], ptr=None, dim_size=x_all.size()[0])
 
