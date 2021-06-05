@@ -42,7 +42,7 @@ class BBoxLogger(pl.callbacks.base.Callback):
             for i in range(num_images):
                 image = np.pad(images[i], pad_width=self.__padding)
                 wandb_data.append(wandb.Image(image, boxes=boxes_formatted[i]))
-            model.logger.experiment.log({"predictions": wandb_data}, step=trainer.global_step, commit=False)
+            model.logger.experiment.log({"predictions": wandb_data}, commit=False)
 
     @staticmethod
     def get_bbox(batch: torch_geometric.data.Batch, model: pl.LightningModule):
