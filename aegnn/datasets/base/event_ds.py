@@ -64,6 +64,7 @@ class EventDataset(Dataset):
             task_manager = TaskManager(self.num_workers, queue_size=self.num_workers, total=len(self.raw_paths))
             for rf in self.raw_paths:
                 task_manager.queue(self.processing, rf=rf, **kwargs)
+            task_manager.join()
         else:
             logging.info("Processing raw files with a single process")
             for rf in tqdm(self.raw_paths):

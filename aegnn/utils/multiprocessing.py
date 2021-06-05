@@ -36,9 +36,12 @@ class TaskManager(object):
     def __enter__(self):
         return self
 
-    def __exit__(self, error_type, value, traceback):
+    def join(self):
         self.__pool.close()
         self.__pool.join()
+
+    def __exit__(self, error_type, value, traceback):
+        self.join()
         self.outputs = [(i, r.get()) for i, r in self.outputs]
 
     def queue(self, function, *args, **kwargs):
