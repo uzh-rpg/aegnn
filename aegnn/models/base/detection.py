@@ -1,4 +1,7 @@
 """Partly copied from rpg-asynet paper: https://github.com/uzh-rpg/rpg_asynet"""
+import collections
+
+import numpy as np
 import torch
 import torch_geometric
 import pytorch_lightning as pl
@@ -31,6 +34,7 @@ class DetectionModel(pl.LightningModule):
         self.num_outputs = self.num_outputs_per_cell * self.cell_map_shape[0] * self.cell_map_shape[1]  # detection grid
 
         self.optimizer_kwargs = dict(lr=learning_rate)
+        self.__validation_logs = collections.defaultdict(list)
 
     ###############################################################################################
     # Steps #######################################################################################
@@ -45,21 +49,37 @@ class DetectionModel(pl.LightningModule):
 
         # Compute metrics for the recognition (class accuracy) and detection (iou) part, as well as combined
         # metrics (mean average precision = mAP).
-        metrics_logs = self.evaluate(outputs, batch=batch, prefix="Train/")
-        metrics_logs["Train/IOU"] = iou.mean()
-        self.logger.log_metrics({"Train/Loss": loss, **loss_logs, **metrics_logs}, step=self.trainer.global_step)
+        detected_bbox = self.detect_nms(model_outputs=outputs)
+        metrics_logs = self.evaluate(detected_bbox, gt_y=batch.y, gt_bbox=getattr(batch, "bbox"), prefix="Train/")
+        self.logger.log_metrics({"Train/Loss": loss, "Train/IOU": iou.mean(), **loss_logs, **metrics_logs})
         return loss
 
     def validation_step(self, batch: torch_geometric.data.Batch, batch_idx: int) -> torch.Tensor:
         outputs = self.forward(data=batch)
+        detected_bbox = self.detect_nms(model_outputs=outputs)
+        detected_bbox[:, 0] += batch_idx * batch.num_graphs
         gt_bb = getattr(batch, "bbox").to(self.device)
 
-        loss, _, iou = self.loss(outputs, bounding_box=gt_bb)
-        metrics_logs = self.evaluate(outputs, batch=batch, prefix="Val/")
-        metrics_logs["Val/IOU"] = iou.mean()
-        self.logger.log_metrics({"Val/Loss": loss, **metrics_logs}, step=self.trainer.global_step)
+        with torch.no_grad():
+            loss, _, iou = self.loss(outputs, bounding_box=gt_bb)
 
+        self.__validation_logs["detected_bbox"].append(detected_bbox)
+        self.__validation_logs["gt_bbox"].append(gt_bb)
+        self.__validation_logs["gt_y"].append(batch.y)
+        self.__validation_logs["loss"].append(loss.detach().cpu().item())
+        self.__validation_logs["iou"].append(iou.detach().cpu())
         return outputs
+
+    def on_validation_end(self) -> None:
+        detected_bbox = torch.cat(self.__validation_logs["detected_bbox"])
+        gt_y = torch.cat(self.__validation_logs["gt_y"])
+        gt_bbox = torch.cat(self.__validation_logs["gt_bbox"])
+
+        metrics_logs = self.evaluate(detected_bbox, gt_y=gt_y, gt_bbox=gt_bbox, prefix="Val/")
+        metrics_logs["Val/IOU"] = np.concatenate(self.__validation_logs["iou"]).mean()
+        metrics_logs["Val/Loss"] = np.mean(self.__validation_logs["loss"])
+        self.logger.log_metrics(metrics_logs)
+        self.__validation_logs = collections.defaultdict(list)
 
     ###############################################################################################
     # Parsing #####################################################################################
@@ -102,21 +122,20 @@ class DetectionModel(pl.LightningModule):
     ###############################################################################################
     # Metrics #####################################################################################
     ###############################################################################################
-    def evaluate(self, model_outputs: torch.Tensor, batch: torch_geometric.data.Batch, prefix: str = ""
-                 ) -> Dict[str, torch.Tensor]:
-        metrics_logs = {}
-
+    def detect_nms(self, model_outputs: torch.Tensor, threshold: float = 0.3, nms_iou: float = 0.6):
         with torch.no_grad():
-            detected_bbox = self.detect(model_outputs, threshold=0.3)
-            detected_bbox = non_max_suppression(detected_bbox, iou=0.6)
-            gt_bbox = getattr(batch, "bbox")
+            detected_bbox = self.detect(model_outputs, threshold=threshold)
+            return non_max_suppression(detected_bbox, iou=nms_iou)
 
-            if detected_bbox.numel() > 0:
-                dbb_batch_idx = detected_bbox[:, 0].long()
-                metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(preds=detected_bbox[:, 5].long(),
-                                                                        target=batch.y[dbb_batch_idx])
-            metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bbox)
-
+    @staticmethod
+    def evaluate(detected_bbox: torch.Tensor, gt_y: torch.Tensor, gt_bbox: torch.Tensor, prefix: str = "") -> Dict:
+        metrics_logs = {}
+        if detected_bbox.numel() > 0:
+            dbb_batch_idx = detected_bbox[:, 0].long()
+            metrics_logs[f"{prefix}Accuracy"] = pl_metrics.accuracy(preds=detected_bbox[:, 5].long(),
+                                                                    target=gt_y[dbb_batch_idx]
+                                                                    ).detach().cpu().item()
+        metrics_logs[f"{prefix}mAP"] = compute_map(gt_bbox, detected_bbox=detected_bbox)
         return metrics_logs
 
     ###############################################################################################
