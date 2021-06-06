@@ -34,5 +34,9 @@ class PHyperLogger(pl.callbacks.base.Callback):
             num_classes = getattr(model, "num_classes", 0)
         self.log_kwargs["num_classes"] = num_classes
 
+        # Log number of model parameters.
+        self.log_kwargs["num_parameters"] = sum(p.numel() for p in model.parameters())
+        self.log_kwargs["num_trainable_parameters"] = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
         # Log additional logging kwargs from initialization.
         model.logger.log_hyperparams(self.log_kwargs)
