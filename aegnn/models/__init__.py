@@ -1,4 +1,5 @@
 import aegnn.models.base
+import aegnn.models.layer
 import aegnn.models.utils
 
 # Object recognition models.
@@ -10,6 +11,7 @@ from aegnn.models.baseline.cnld import CNLD
 from aegnn.models.baseline.rnld import RNLD
 from aegnn.models.baseline.yolov4 import YoloV4
 from aegnn.models.baseline.asynet import AsyNet
+from aegnn.models.baseline.asynet_gnn import AsyNetGNN
 
 ################################################################################################
 # Access functions #############################################################################
@@ -20,7 +22,7 @@ import typing
 
 def by_name(name: str, **kwargs) -> typing.Union[pl.LightningModule, None]:
     from aegnn.utils.io import select_by_name
-    choices = [NVS, NVSD, CNLD, RNLD, YoloV4, AsyNet]
+    choices = [NVS, NVSD, CNLD, RNLD, YoloV4, AsyNet, AsyNetGNN]
     return select_by_name(choices, name=name, **kwargs)
 
 
