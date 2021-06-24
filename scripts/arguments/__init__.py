@@ -27,6 +27,8 @@ def add_trainer_arguments(parser: NestedArgumentParser) -> NestedArgumentParser:
     group.add_argument("--train.overfit-batches", action="store", default=0.0, type=int)
     group.add_argument("--train.log-every-n-steps", action="store", default=10, type=int)
     group.add_argument("--train.gradient_clip_val", action="store", default=0.0, type=float)
+    group.add_argument("--train.limit_train_batches", action="store", default=1.0, type=int)
+    group.add_argument("--train.limit_val_batches", action="store", default=1.0, type=int)
 
     parser.add_argument("--log-gradients", action="store_true")
     parser.add_argument("--profile", action="store_true")

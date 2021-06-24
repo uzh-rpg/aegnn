@@ -63,9 +63,9 @@ class DetectionModel(pl.LightningModule):
         with torch.no_grad():
             loss, _, iou = self.loss(outputs, bounding_box=gt_bb)
 
-        self.__validation_logs["detected_bbox"].append(detected_bbox)
-        self.__validation_logs["gt_bbox"].append(gt_bb)
-        self.__validation_logs["gt_y"].append(batch.y)
+        self.__validation_logs["detected_bbox"].append(detected_bbox.detach().cpu())
+        self.__validation_logs["gt_bbox"].append(gt_bb.detach().cpu())
+        self.__validation_logs["gt_y"].append(batch.y.detach().cpu())
         self.__validation_logs["loss"].append(loss.detach().cpu().item())
         self.__validation_logs["iou"].append(iou.detach().cpu())
         return outputs

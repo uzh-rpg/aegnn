@@ -23,7 +23,7 @@ class NVST(Transform):
 
     ["Graph-Based Object Classification for Neuromorphic VisionSensing" (Bi, 2019)]"""
 
-    def __init__(self, r: float = 3, d_max: int = 32, beta: float = 0.5e-5, n_max: int = 8):
+    def __init__(self, r: float = 10, d_max: int = 128, beta: float = 0.5e-5, n_max: int = 8):
         self.r = float(r)
         self.d_max = int(d_max)
         self.beta = beta
@@ -46,7 +46,7 @@ class NVST(Transform):
         data.edge_index = radius_graph(data.pos, r=self.r, max_num_neighbors=self.d_max)
 
         # The edge attributes thereby encodes the absolute relative spatial coordinates between nodes.
-        data.pos = data.pos[:, :2]  # (x,y) only
+        # data.pos = data.pos[:, :2]  # (x,y) only
         data = self.__edge_attr(data)  # egde-attributes = {|x|, |y|} (normalized)
         data.edge_attr[torch.isnan(data.edge_attr)] = 0  # nan -> 0
         return data
