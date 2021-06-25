@@ -155,24 +155,33 @@ class EventDataset(Dataset):
                 is_inside = False
                 break
 
-        # If the file is inside the filter kwargs, add its index to the list of subset indices.
+            # If the file is inside the filter kwargs, add its index to the list of subset indices.
             if is_inside:
                 indices.append(i)
         return Subset(self, indices=indices)
 
     def collate(self, batch: Batch) -> Batch:
+        """Collate a batch by loading and filtering the data as well as the annotations (labels, bounding boxes, etc.).
+        Thereby, only load the internally declared classes list and filter certain "not useful" annotations.
+
+        :param batch: input batch to collate/filter.
+        """
         batch_new = []
         label_dict = {label: i for i, label in enumerate(self.classes)}
 
-        for data in batch:
-            arg_label = [i for i, lbl in enumerate(data.label) if lbl in self.classes]
-            if data.bbox.shape[0] > 1:
-                arg_label = [np.argmax(data.bbox[..., 2] * data.bbox[..., 3]).tolist()]
+        for batch_idx, data in enumerate(batch):
+            # Filter the bounding boxes by the label (if e.g. only certain classes should be labeled) and
+            # by the bounding box, which depends on the dataset.
+            label_mask = [lbl in self.classes for lbl in data.label]
+            bbox_mask = self.bbox_mask(data.bbox)
+            arg_label = np.where(np.logical_and(bbox_mask, label_mask))[0].tolist()
+
+            data.batch_bbox = torch.ones(len(arg_label)) * batch_idx
             data.label = [data.label[i] for i in arg_label]
             class_id = [label_dict[lbl] for lbl in data.label]
             with torch.no_grad():
                 class_id = torch.tensor(class_id, device=data.bbox.device)
-                data.bbox = data.bbox[arg_label, :].view(-1, 1, 5)
+                data.bbox = data.bbox[arg_label, :]
                 data.bbox[..., -1] = class_id
                 data.y = class_id.long()
 

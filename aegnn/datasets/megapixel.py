@@ -44,6 +44,12 @@ class Megapixel(EventDataModule):
         def _load_file(f_path: str):
             return torch.load(f_path)
 
+        @staticmethod
+        def bbox_mask(bounding_box: np.ndarray):
+            leq_width = bounding_box[..., 2] > 20
+            leq_height = bounding_box[..., 3] > 20
+            return np.logical_and(leq_width, leq_height)
+
         #########################################################################################################
         # Files #################################################################################################
         #########################################################################################################

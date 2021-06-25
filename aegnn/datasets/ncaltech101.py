@@ -87,6 +87,10 @@ class NCaltech101(EventDataModule):
             label_dict = {lbl: i for i, lbl in enumerate(self.classes)}
             return label_dict.get(label, None)
 
+        @staticmethod
+        def bbox_mask(bounding_box: np.ndarray):
+            return [True]  # always only one bounding box
+
         #########################################################################################################
         # Files #################################################################################################
         #########################################################################################################
