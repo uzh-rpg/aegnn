@@ -26,7 +26,8 @@ def bbox(batch: torch_geometric.data.Batch, predictions: torch.Tensor = None, ti
     assert num_graphs == ax_size * ax_size, "number of plots should be evenly square-able"
 
     # Get ground-truth bounding boxes and sample random indices to plot.
-    bb_gt = getattr(batch, "bbox").view(-1, 1, 5)
+    bb_gt = getattr(batch, "bbox")
+    bb_gt_index = getattr(batch, "batch_bbox")
     indices = random.sample(list(np.arange(0, batch.num_graphs)), k=num_graphs)
 
     # Plot every single graph individually based on functions defined in `data`.
@@ -38,7 +39,7 @@ def bbox(batch: torch_geometric.data.Batch, predictions: torch.Tensor = None, ti
             bbox_i = predictions[in_batch, :]
         title_i = titles[i] if titles is not None else None
         sample = batch.to_data_list()[i]
-        sample.bbox = bb_gt[i].view(-1, 5)
+        sample.bbox = bb_gt[bb_gt_index == i].view(-1, 5)
 
         xax = iax // ax_size
         yax = iax % ax_size
