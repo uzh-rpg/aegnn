@@ -16,27 +16,27 @@ class RNLD(DetectionModel):
 
     def __init__(self, num_classes: int, img_shape: Tuple[int, int], num_bounding_boxes: int = 1, **kwargs):
         super().__init__(num_classes, num_bounding_boxes=num_bounding_boxes, img_shape=img_shape, learning_rate=1e-3)
-        self.conv1 = GMMConv(1, out_channels=8, dim=3, kernel_size=2)
+        self.conv1 = GMMConv(1, out_channels=8, dim=2, kernel_size=2)
         self.norm1 = BatchNorm(in_channels=8)
-        self.conv2 = GMMConv(8, out_channels=16, dim=3, kernel_size=2)
+        self.conv2 = GMMConv(8, out_channels=16, dim=2, kernel_size=2)
         self.norm2 = BatchNorm(in_channels=16)
 
-        self.conv3 = GMMConv(16, out_channels=16, dim=3, kernel_size=2)
+        self.conv3 = GMMConv(16, out_channels=16, dim=2, kernel_size=2)
         self.norm3 = BatchNorm(in_channels=16)
-        self.conv4 = GMMConv(16, out_channels=16, dim=3, kernel_size=2)
+        self.conv4 = GMMConv(16, out_channels=16, dim=2, kernel_size=2)
         self.norm4 = BatchNorm(in_channels=16)
 
-        self.conv5 = GMMConv(16, out_channels=32, dim=3, kernel_size=2)
+        self.conv5 = GMMConv(16, out_channels=32, dim=2, kernel_size=2)
         self.norm5 = BatchNorm(in_channels=32)
 
-        self.conv6 = GMMConv(32, out_channels=32, dim=3, kernel_size=2)
+        self.conv6 = GMMConv(32, out_channels=32, dim=2, kernel_size=2)
         self.norm6 = BatchNorm(in_channels=32)
-        self.conv7 = GMMConv(32, out_channels=32, dim=3, kernel_size=2)
+        self.conv7 = GMMConv(32, out_channels=32, dim=2, kernel_size=2)
         self.norm7 = BatchNorm(in_channels=32)
 
-        self.conv6 = GMMConv(32, out_channels=32, dim=3, kernel_size=2)
+        self.conv6 = GMMConv(32, out_channels=32, dim=2, kernel_size=2)
         self.norm6 = BatchNorm(in_channels=32)
-        self.conv7 = GMMConv(32, out_channels=32, dim=3, kernel_size=2)
+        self.conv7 = GMMConv(32, out_channels=32, dim=2, kernel_size=2)
         self.norm7 = BatchNorm(in_channels=32)
 
         self.fc = Linear(32 * 16, out_features=self.num_outputs)

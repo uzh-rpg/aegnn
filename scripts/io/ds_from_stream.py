@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 import glob
 import os
+import random
 import torch
 
 from torch_geometric.data import Data
@@ -60,7 +61,8 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
 
     num_events = x.size
     for i, (bbox_idx, idx) in enumerate(bbox_to_idx):
-        if i > 20:
+        pi = random.random() * 100
+        if pi > 20:
             continue
 
         ws = max(idx - window_size_bd, 0)
@@ -85,7 +87,7 @@ def process(f_path: str, ds: str, window_size_bd: int, window_size_fd: int, **kw
 if __name__ == '__main__':
     args = parse_args()
     dataset_dir = os.environ["AEGNN_DATASET_DIR"]
-    ds_tuples = [("train", "training", 1), ("val", "validation", 1)]
+    ds_tuples = [("train", "training", 100), ("val", "validation", 10)]  # ds_type, name and max_samples
 
     file_dict = {}
     for ds_type, ds_name, max_samples in ds_tuples:

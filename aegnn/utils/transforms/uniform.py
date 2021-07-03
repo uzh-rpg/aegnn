@@ -10,7 +10,7 @@ from .base import Transform
 
 class Uniform(Transform):
 
-    def __init__(self, r: float = 3, d_max: int = 32, beta: float = 0.5e-5, n_max: int = 50000):
+    def __init__(self, r: float = 3, d_max: int = 32, beta: float = 0.5e-5, n_max: int = 10000):
         self.r = float(r)
         self.d_max = int(d_max)
         self.beta = beta
