@@ -137,9 +137,9 @@ def __graph_process(module: MaxPooling, x: torch.Tensor, pos: torch.Tensor, edge
 
     # The coarsened graph is reconnected by dropping all edges inside a voxel and
     # unifying all edges between voxels.
-    vdx = torch.cat([getattr(module.asy_graph, "vdx"), vdx_update[diff_idx.numel():]])
-    vdx[diff_idx] = vdx_update[:diff_idx.numel()]
-    edges_coarse = torch.empty((2, 0), dtype=torch.long, device=x.device)  # TODO: check if correct
+    vdx = torch.cat([getattr(module.asy_graph, "vdx"), vdx_update[diff_idx.numel():]])  # add new node index
+    vdx[diff_idx] = vdx_update[:diff_idx.numel()]  # change diff node index
+    edges_coarse = torch.empty((2, 0), dtype=torch.long, device=x.device)
     if edge_index is not None:
         edges_coarse, _ = pool_edge(cluster=vdx, edge_index=edge_index, edge_attr=None)
 
@@ -157,6 +157,7 @@ def __graph_process(module: MaxPooling, x: torch.Tensor, pos: torch.Tensor, edge
     # Compute number of floating point operations (no cat, flatten, etc.).
     if module.asy_flops_log is not None:
         flops = x_scatter.size()[0] + pos_sum_scatter.numel() + node_count_scatter.numel()  # pooling
+        flops += voxel_pos_sum.numel()  # pos mean
         module.asy_flops_log.append(flops)
     # For asychronous processing we assume that all events are in the same "batch".
     graph_out.batch = torch.zeros(graph_out.num_nodes, dtype=torch.long, device=graph_out.x.device)
@@ -198,7 +199,6 @@ def make_max_pool_asynchronous(module: MaxPooling, grid_size: List[int], r: floa
     :param log_flops: log flops of asynchronous update.
     :param log_runtime: log runtime of asynchronous update.
     """
-    # TODO: advance to dimensions > 2d using ravel multi index
     assert hasattr(module, "voxel_size")
     assert len(module.voxel_size) == len(grid_size)
     assert all([module.voxel_size[i] <= grid_size[i] for i in range(len(module.voxel_size))])

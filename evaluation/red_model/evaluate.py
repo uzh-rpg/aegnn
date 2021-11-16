@@ -2,7 +2,7 @@ import ptflops
 import torch
 from model import REDModel
 
-img_shape = (304, 240)  # TODO: combine to one constants file
+img_shape = (304, 240)
 input_shape = (1, 10, *img_shape)  # event volume representation (batch_size, #bins, img width, img height)
 model = REDModel(in_channels=10, img_shape=img_shape)
 

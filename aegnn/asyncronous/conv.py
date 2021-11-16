@@ -114,7 +114,6 @@ def __graph_processing(module, x: torch.Tensor, edge_index = None, edge_attr: to
         y_update = module.aggregate(phi, index=edge_index[1, :], ptr=None, dim_size=x_all.size()[0])
         # Concat old and updated feature for output feature vector.
         y[idx_update] = y_update[idx_update]
-        # TODO: calling graph update function (although usually x_new = y)
     logging.debug(f"Updated {idx_update.numel()} nodes in asy. graph of module {module}")
 
     # If required, compute the flops of the asynchronous update operation. Therefore, sum the flops for each node
@@ -169,8 +168,6 @@ def make_conv_asynchronous(module, r: float, edge_attributes=None, is_initial: b
     :param log_flops: log flops of asynchronous update.
     :param log_runtime: log runtime of asynchronous update.
     """
-    # TODO: Graph updates
-    # TODO: add bias and root weight
     assert __check_support(module)
 
     module = add_async_graph(module, r=r, log_flops=log_flops, log_runtime=log_runtime)
