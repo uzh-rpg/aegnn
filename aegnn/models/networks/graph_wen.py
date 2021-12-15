@@ -3,7 +3,7 @@ import torch_geometric
 
 from torch.nn import Linear
 from torch.nn.functional import dropout, elu
-from torch_geometric.nn.conv import GCNConv
+from torch_geometric.nn.conv import SplineConv
 from torch_geometric.nn.norm import BatchNorm
 from torch_geometric.transforms import Cartesian
 
@@ -42,12 +42,12 @@ class ConvBlock(torch.nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int, voxel_size: int, transform=Cartesian(norm=True, cat=False)):
         super(ConvBlock, self).__init__()
-        self.conv = GCNConv(in_channels, out_channels)
+        self.conv = SplineConv(in_channels, out_channels, dim=3, kernel_size=4)
         self.norm = BatchNorm(out_channels)
         self.pool = MaxPooling([voxel_size] * 3, transform=transform)
 
     def forward(self, data: torch_geometric.data.Batch):
-        data.x = elu(self.conv(data.x, data.edge_index))
+        data.x = elu(self.conv(data.x, data.edge_index, data.edge_attr))
         data.x = self.norm(data.x)
         data = self.pool(data.x, pos=data.pos, batch=data.batch, edge_index=data.edge_index, return_data_obj=True)
         return data
