@@ -33,18 +33,19 @@ def main(model, data_module, num_workers: int = 16):
     thresholds = list(itertools.product(confidence_thresholds, nms_thresholds))
 
     for confidence_th, nms_th in tqdm(thresholds):
+        logging.debug(f"Evaluating mAP for confidence = {confidence_th} and nms = {nms_th}")
         map_scores = []
 
-        data_loader = data_module.val_dataloader(num_workers=num_workers).__iter__()
-        for batch in tqdm(data_loader):
-            batch = batch.to(model.device)
-            outputs = model.forward(data=batch)
-            detected_bbox = model.detect_nms(outputs, threshold=confidence_th, nms_iou=nms_th)
+        with torch.no_grad():
+            data_loader = data_module.val_dataloader(num_workers=num_workers).__iter__()
+            for batch in tqdm(data_loader):
+                batch = batch.to(model.device)
+                outputs = model.forward(data=batch)
+                detected_bbox = model.detect_nms(outputs, threshold=confidence_th, nms_iou=nms_th)
 
-            gt_batch = getattr(batch, "batch_bbox").detach().cpu()
-            gt_bb = getattr(batch, "bbox").cpu()
-
-            map_scores.append(compute_map(detected_bbox, gt_bb, gt_batch, iou_thresholds_range))
+                gt_batch = getattr(batch, "batch_bbox").detach()
+                gt_bb = getattr(batch, "bbox")
+                map_scores.append(compute_map(detected_bbox, gt_bb, gt_batch, iou_thresholds_range))
 
         results_dict = dict(nms=nms_th, confidence=confidence_th)
         results_dict["mAP"] = np.mean(map_scores)
@@ -61,7 +62,10 @@ if __name__ == '__main__':
     if args.debug:
         _ = aegnn.utils.loggers.LoggingLogger(None, name="debug")
 
-    device = torch.device(f"cuda:{args.device}")
+    if args.device != "cpu":
+        device = torch.device(f"cuda:{args.device}")
+    else:
+        device = torch.device("cpu")
     model_eval = torch.load(args.model_file).to(device)
     dm = aegnn.datasets.by_name(args.dataset).from_argparse_args(args)
     dm.setup()

@@ -139,7 +139,7 @@ class Gen1(EventDataModule):
         data = self._buffer_to_data(data, label=data_dict['label'], file_id=f_path)
         data.bbox = data_dict['bbox'][:, 1:6].long()  # (x, y, w, h, class_id)
         data.y = data.bbox[:, -1]
-        data.pos[:, 2] = data.pos[:, 2] - data.pos[:, 2].min()  # time normalization
+        data.pos[:, 2] = normalize_time(data.pos[:, 2])  # time normalization
         data.edge_index = data_dict['edge_index']
         return data
 

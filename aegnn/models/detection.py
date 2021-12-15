@@ -236,12 +236,12 @@ class DetectionModel(pl.LightningModule):
 
             # ----- No Object Confidence Loss -----
             # Get the predictions, which do not include a object
-            # no_object_mask = torch.ones_like(pred_conf, dtype=torch.bool)
-            # no_object_mask[gt_cell_x, gt_cell_y, responsible_pred_bbox_idx] = 0
-            # if torch.any(no_object_mask):
-            #     confidence_no_object_loss = (pred_conf[no_object_mask] ** 2).mean()
-            # else:
-            #     confidence_no_object_loss = torch.tensor(0, device=model_output.device)
+            no_object_mask = torch.ones_like(pred_conf, dtype=torch.bool)
+            no_object_mask[gt_cell_x, gt_cell_y, responsible_pred_bbox_idx] = 0
+            if torch.any(no_object_mask):
+                confidence_no_object_loss = (pred_conf[no_object_mask] ** 2).mean()
+            else:
+                confidence_no_object_loss = torch.tensor(0, device=model_output.device)
 
             # ----- Class Prediction Loss -----
             loss_function = torch.nn.CrossEntropyLoss()
@@ -253,7 +253,7 @@ class DetectionModel(pl.LightningModule):
             losses_dict["offset"] += self.__lambda_coord * offset_loss
             losses_dict["shape"] += self.__lambda_coord * shape_loss
             losses_dict["confidence"] += confidence_loss
-            # losses_dict["confidence_no_object"] += self.__lambda_no_object * confidence_no_object_loss
+            losses_dict["confidence_no_object"] += self.__lambda_no_object * confidence_no_object_loss
             losses_dict["class"] += self.__lambda_class * class_loss
 
         # Compute IOU mean value. When there are no bounding boxes, assume an IOU = 1.

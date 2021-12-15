@@ -21,7 +21,7 @@ class GraphRes(torch.nn.Module):
         # Set dataset specific hyper-parameters.
         if dataset == "ncars":
             kernel_size = 2
-            n = [1, 8, 16, 16, 16, 32, 32, 32, 32, 32]
+            n = [1, 8, 16, 16, 16, 32, 32, 32, 32]
             pooling_outputs = 32
         elif dataset == "ncaltech101" or dataset == "gen1":
             kernel_size = 8
