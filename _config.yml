@@ -21,7 +21,7 @@ description: >
 # root of your server.
 baseurl: "/aegnn" # the subpath of your site, e.g. /blog/
 url: "https://uzh-rpg.github.io" # the base hostname & protocol for your site
-#cover: "/assets/prompc.gif"
+cover: "/assets/thumbnail.png"
 logo: "/assets/logo.png"
 
 # Build settings
