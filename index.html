@@ -1,0 +1,101 @@
+---
+layout: default
+pagination:
+enabled: true
+---
+<!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<div class="home">
+
+  <div class="site-header-container {% if site.cover %}has-cover{% endif %}"
+    {% if site.cover %}style="background-image: url({{ site.cover | prepend: site.baseurl }});" {% endif %}>
+    <div class="scrim {% if site.cover %}has-cover{% endif %}">
+      <header class="site-header">
+        <h1 class="title" style=font-size:50px>{{ site.title }}</h1>
+        {% if site.subtitle %}<p class="title" style=font-size:30px>{{ site.subtitle }}</p>{% endif %}
+      </header>
+    </div>
+  </div>
+  <br>
+  <p align="center">
+      <img src="https://rpg.ifi.uzh.ch/img/papers/CVPR22_Schaefer.png" alt="eres" style="width: 400px""/>
+  </p>
+  <div class="wrapper">
+    <h1 id="headings">Introduction</h1>
+    <p style="text-align: justify">
+      The best performing learning algorithms devised for
+      event cameras work by first converting events into dense
+      representations that are then processed using standard
+      CNNs. However, these steps discard both the sparsity and
+      high temporal resolution of events, leading to high computational burden and latency. For this reason, recent works
+      have adopted Graph Neural Networks (GNNs), which process events as “static” spatio-temporal graphs, which are
+      inherently ”sparse”. We take this trend one step further by
+      introducing Asynchronous, Event-based Graph Neural Networks (AEGNNs), a novel event-processing paradigm that
+      generalizes standard GNNs to process events as “evolving”
+      spatio-temporal graphs. AEGNNs follow efficient update
+      rules that restrict recomputation of network activations only
+      to the nodes affected by each new event, thereby significantly reducing both computation and latency for event-
+      by-event processing. AEGNNs are easily trained on synchronous inputs and can be converted to efficient, ”asynchronous” networks at test time. We thoroughly validate
+      our method on object classification and detection tasks,
+      where we show an up to a 200-fold reduction in computational complexity (FLOPs), with similar or even better
+      performance than state-of-the-art asynchronous methods.
+      This reduction in computation directly translates to an 8-fold reduction in computational latency when compared to
+      standard GNNs, which opens the door to low-latency event-
+      based processing.
+    </p>
+
+
+
+    <div class="container" style="margin-top:30px;margin-bottom:30px;">
+      <h2>Publication</h2>
+      If you use this code in a publication, please cite our paper.
+
+    </p>
+      S. Schaefer, D. Gehrig and D. Scaramuzza, <b>"AEGNN: Asynchronous Event-based Graph Neural Networks" </b>,
+      IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2022. 
+      <br>
+      <a href="http://rpg.ifi.uzh.ch/docs/CVPR22_Schaefer.pdf">[PDF]</a> 
+      <a href="https://youtu.be/HV9_FhS-f88">[YouTube]</a> 
+      <a href="https://github.com/uzh-rpg/aegnn/">[Code]</a> 
+    </p>
+<pre>
+<code class="pre-scrollable" style="background:#ffffff;color:rgb(36, 21, 21);font-size:12px;padding:0px;border-width:0px;">
+@article{Schaefer21cvpr,
+  title={AEGNN: Asynchronous Event-based Graph Neural Networks},
+  author={Schaefer, Simon and Gehrig, Daniel and Scaramuzza, Davide},
+  journal={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2022}
+}
+</code>
+</pre>
+
+    </p>
+
+    <h2 id="headings">People</h2> 
+<div id="people">
+  <div class="inline-block">
+    <a href="https://simon-schaefer.github.io/">
+    <img class="circular--square" src="{{site.baseurl}}/assets/people/simon.jpg" style="width: 200px">
+    <p style="text-align:center"><strong>Simon Schaefer</strong></p>
+    </a>
+  </div>
+  <div class="inline-block">
+    <a href="https://danielgehrig18.github.io/">
+    <img class="circular--square" src="{{site.baseurl}}/assets/people/avatar.jpg" style="width: 200px">
+    <p style="text-align:center"><strong>Daniel Gehrig</strong></p>
+    </a>
+  </div>
+  <div class="inline-block">
+    <a href="http://rpg.ifi.uzh.ch/people_scaramuzza.html">
+    <img class="circular--square" src="{{site.baseurl}}/assets/people/davide.png" style="width: 200px">
+    <p style="text-align:center"><strong>Prof. Davide Scaramuzza</strong></p>
+    </a>
+  </div>
+</div>
+
+  </div>
+
+
+
+</div>

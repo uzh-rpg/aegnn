@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>AEGNN: Asynchronous Event-based Graph Neural Networks</title>
+  <meta name="description" content=""AEGNN: Asynchronous Event-based Graph Neural Networks"
+">
+  
+  <meta name="author" content="Robotics and Perception Group">
+  <meta name="copyright" content="&copy; Robotics and Perception Group 2022">
+  
+
+  <!-- External libraries -->
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/monokai-sublime.min.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/lightbox2/2.7.1/css/lightbox.css">
+
+  <!-- Favicon and other icons (made with http://www.favicon-generator.org/) -->
+  <link rel="shortcut icon" href="/aegnn/assets/icons/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/aegnn/assets/icons/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="57x57" href="/aegnn/assets/icons/apple-icon-57x57.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="/aegnn/assets/icons/apple-icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="/aegnn/assets/icons/apple-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/aegnn/assets/icons/apple-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="/aegnn/assets/icons/apple-icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/aegnn/assets/icons/apple-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="/aegnn/assets/icons/apple-icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/aegnn/assets/icons/apple-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/aegnn/assets/icons/apple-icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="192x192"  href="/aegnn/assets/icons/android-icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/aegnn/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/aegnn/assets/icons/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/aegnn/assets/icons/favicon-16x16.png">
+  <link rel="manifest" href="/aegnn/assets/icons/manifest.json">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="/aegnn/assets/icons/ms-icon-144x144.png">
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <!-- Facebook OGP cards -->
+  <meta property="og:description" content=""AEGNN: Asynchronous Event-based Graph Neural Networks"
+" />
+  <meta property="og:url" content="http://localhost:4000/">
+  <meta property="og:site_name" content="AEGNN: Asynchronous Event-based Graph Neural Networks" />
+  <meta property="og:title" content="AEGNN: Asynchronous Event-based Graph Neural Networks" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="http://localhost:4000/aegnn/assets/logo.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="612" />
+  <meta property="og:image:height" content="605" />
+  
+
+  
+  <!-- Twitter: card tags -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="AEGNN: Asynchronous Event-based Graph Neural Networks">
+  <meta name="twitter:description" content=""AEGNN: Asynchronous Event-based Graph Neural Networks"
+">
+  <meta name="twitter:image" content="http://localhost:4000/aegnn/assets/logo.png">
+  <meta name="twitter:url" content="http://localhost:4000/">
+  
+
+  
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="/aegnn/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/aegnn/">
+	<link rel="alternate" type="application/rss+xml" title="AEGNN: Asynchronous Event-based Graph Neural Networks" href="http://localhost:4000/aegnn/feed.xml" />
+	
+	<!-- Tooltips -->
+	<script type="text/javascript">
+		window.tooltips = []
+	</script>
+</head>
+
+
+  <body>
+
+    <header class="navigation" role="banner">
+  <div class="navigation-wrapper">
+    <a href="http://rpg.ifi.uzh.ch/" class="logo">
+      
+      <img src="/aegnn/assets/logo.png" alt="AEGNN: Asynchronous Event-based Graph Neural Networks">
+      
+    </a>
+    <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu">
+      <i class="fa fa-bars"></i>
+    </a>
+    <nav role="navigation">
+      <ul id="js-navigation-menu" class="navigation-menu show">
+        <li class="nav-link"><a href="/aegnn">Home</a>
+          <!-- 
+	
+	<li class="nav-link"><a href="/aegnn/about/">People</a>
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+ -->
+        <!-- <li class="nav-link"><a href="https://github.com/uzh-rpg/high_mpc">GitHub</a> -->
+      </ul>
+    </nav>
+  </div>
+</header>
+
+    <div class="page-content">
+        <!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<div class="home">
+
+  <div class="site-header-container "
+    >
+    <div class="scrim ">
+      <header class="site-header">
+        <h1 class="title" style=font-size:50px>AEGNN: Asynchronous Event-based Graph Neural Networks</h1>
+        
+      </header>
+    </div>
+  </div>
+  <br>
+  <p align="center">
+      <img src="https://rpg.ifi.uzh.ch/img/papers/CVPR22_Schaefer.png" alt="eres" style="width: 400px""/>
+  </p>
+  <div class="wrapper">
+    <h1 id="headings">Introduction</h1>
+    <p style="text-align: justify">
+      The best performing learning algorithms devised for
+      event cameras work by first converting events into dense
+      representations that are then processed using standard
+      CNNs. However, these steps discard both the sparsity and
+      high temporal resolution of events, leading to high computational burden and latency. For this reason, recent works
+      have adopted Graph Neural Networks (GNNs), which process events as “static” spatio-temporal graphs, which are
+      inherently ”sparse”. We take this trend one step further by
+      introducing Asynchronous, Event-based Graph Neural Networks (AEGNNs), a novel event-processing paradigm that
+      generalizes standard GNNs to process events as “evolving”
+      spatio-temporal graphs. AEGNNs follow efficient update
+      rules that restrict recomputation of network activations only
+      to the nodes affected by each new event, thereby significantly reducing both computation and latency for event-
+      by-event processing. AEGNNs are easily trained on synchronous inputs and can be converted to efficient, ”asynchronous” networks at test time. We thoroughly validate
+      our method on object classification and detection tasks,
+      where we show an up to a 200-fold reduction in computational complexity (FLOPs), with similar or even better
+      performance than state-of-the-art asynchronous methods.
+      This reduction in computation directly translates to an 8-fold reduction in computational latency when compared to
+      standard GNNs, which opens the door to low-latency event-
+      based processing.
+    </p>
+
+
+
+    <div class="container" style="margin-top:30px;margin-bottom:30px;">
+      <h2>Publication</h2>
+      If you use this code in a publication, please cite our paper.
+
+    </p>
+      S. Schaefer, D. Gehrig and D. Scaramuzza, <b>"AEGNN: Asynchronous Event-based Graph Neural Networks" </b>,
+      IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2022. 
+      <br>
+      <a href="http://rpg.ifi.uzh.ch/docs/CVPR22_Schaefer.pdf">[PDF]</a> 
+      <a href="https://youtu.be/HV9_FhS-f88">[YouTube]</a> 
+      <a href="https://github.com/uzh-rpg/aegnn/">[Code]</a> 
+    </p>
+<pre>
+<code class="pre-scrollable" style="background:#ffffff;color:rgb(36, 21, 21);font-size:12px;padding:0px;border-width:0px;">
+@article{Schaefer21cvpr,
+  title={AEGNN: Asynchronous Event-based Graph Neural Networks},
+  author={Schaefer, Simon and Gehrig, Daniel and Scaramuzza, Davide},
+  journal={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2022}
+}
+</code>
+</pre>
+
+    </p>
+
+    <h2 id="headings">People</h2> 
+<div id="people">
+  <div class="inline-block">
+    <a href="https://simon-schaefer.github.io/">
+    <img class="circular--square" src="/aegnn/assets/people/simon.jpg" style="width: 200px">
+    <p style="text-align:center"><strong>Simon Schaefer</strong></p>
+    </a>
+  </div>
+  <div class="inline-block">
+    <a href="https://danielgehrig18.github.io/">
+    <img class="circular--square" src="/aegnn/assets/people/avatar.jpg" style="width: 200px">
+    <p style="text-align:center"><strong>Daniel Gehrig</strong></p>
+    </a>
+  </div>
+  <div class="inline-block">
+    <a href="http://rpg.ifi.uzh.ch/people_scaramuzza.html">
+    <img class="circular--square" src="/aegnn/assets/people/davide.png" style="width: 200px">
+    <p style="text-align:center"><strong>Prof. Davide Scaramuzza</strong></p>
+    </a>
+  </div>
+</div>
+
+  </div>
+
+
+
+</div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h3 class="footer-heading">AEGNN: Asynchronous Event-based Graph Neural Networks</h3>
+
+    <div class="site-navigation">
+
+      <!-- <p><strong>Site Map</strong></p> -->
+      <ul class="pages">
+        <li class="nav-link"><a href="/aegnn">Home</a>
+          
+	
+	<li class="nav-link"><a href="/aegnn/about/">People</a>
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+        <li class="nav-link"><a href="https://github.com/uzh-rpg/high_mpc">GitHub</a>
+      </ul>
+    </div>
+
+    <div class="site-contact">
+
+      <p><strong>Contact</strong></p>
+      <ul class="social-media-list">
+        <li>
+          <a href="mailto:dgehrig@ifi.uzh.ch">
+            <i class="fa fa-envelope-o"></i>
+            <span class="username">dgehrig@ifi.uzh.ch</span>
+          </a>
+        </li>
+
+        
+        
+        <li>
+          <a href="https://github.com/uzh-rpg" title="Fork me on GitHub">
+            <i class="fa fa-github"></i>
+            <span
+              class="username">RPG</span>
+          </a>
+        </li>
+        
+        
+        
+        <li>
+          <a href="https://www.youtube.com/user/ailabRPG" title="Subscribe on YouTube">
+            <i class="fa fa-youtube"></i>
+            <span
+              class="username">RPG</span>
+          </a>
+        </li>
+        
+        
+
+      </ul>
+    </div>
+
+    <div class="site-signature">
+      <!-- <p class="rss-subscribe text"><strong>Subscribe <a href="/aegnn/feed.xml">via
+            RSS</a></strong></p> -->
+      <p class="text">"AEGNN: Asynchronous Event-based Graph Neural Networks"
+</p>
+    </div>
+
+  </div>
+
+</footer>
+
+<!-- Scripts -->
+<script src="//code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.1/js/lightbox.min.js"></script>
+<script src="//unpkg.com/popper.js@1"></script>
+<script src="//unpkg.com/tippy.js@5"></script>
+
+<script type="text/javascript">
+  $(document).ready(function () {
+    // Default syntax highlighting
+    hljs.initHighlightingOnLoad();
+
+    // Header
+    var menuToggle = $('#js-mobile-menu').unbind();
+    $('#js-navigation-menu').removeClass("show");
+    menuToggle.on('click', function (e) {
+      e.preventDefault();
+      $('#js-navigation-menu').slideToggle(function () {
+        if ($('#js-navigation-menu').is(':hidden')) {
+          $('#js-navigation-menu').removeAttr('style');
+        }
+      });
+    });
+
+    // Enable tooltips via Tippy.js
+    if (Array.isArray(window.tooltips)) {
+      window.tooltips.forEach(function (tooltip) {
+        var selector = tooltip[0];
+        var config = tooltip[1];
+        tippy(selector, config);
+      })
+    }
+  });
+
+</script>
+
+
+
+
+
+  </body>
+
+</html>
