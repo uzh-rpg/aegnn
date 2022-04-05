@@ -1,0 +1,16 @@
+torch==1.9.1
+torchvision==0.10
+torchmetrics==0.4
+torch-geometric==1.7.2
+torchvision
+numpy
+scikit-learn
+mapcalc
+pytorch-lightning==1.4.9
+
+tqdm
+seaborn
+matplotlib
+wandb
+pandas
+pytest
