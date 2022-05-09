@@ -18,14 +18,10 @@ This repository contains code from our 2022 CVPR paper [**AEGNN: Asynchronous Ev
 
 ## Installation
 The code heavily depends on PyTorch and the [PyG](https://github.com/pyg-team/pytorch_geometric) framework, which is 
-optimized only for GPUs supporting CUDA. For our implementation the CUDA version 10.2 is used. Install the project
+optimized only for GPUs supporting CUDA. For our implementation the CUDA version 11.3 is used. Install the project
 requirements with:
 ```
-conda create -n aegnn python=3.8
-conda activate aegnn
-pip3 install torch==1.9.1
-pip3 install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cu102.html
-pip3 install -r aegnn/requirements.txt
+conda env create --file=environment.yml
 ```
 
 ## Processing Pipeline
